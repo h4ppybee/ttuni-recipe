@@ -43,6 +43,29 @@ describe('validateBackup', () => {
     });
   });
 
+  it('base64가 아닌 data URL(svg 등)이면 corrupted', () => {
+    expect(
+      validateBackup(file({ photos: [{ ...photo, full: 'data:image/svg+xml,<svg/>' }] })),
+    ).toEqual({ ok: false, reason: 'corrupted' });
+  });
+
+  it('사진 id가 빈 문자열이면 corrupted', () => {
+    expect(validateBackup(file({ photos: [{ ...photo, id: '' }] }))).toEqual({
+      ok: false,
+      reason: 'corrupted',
+    });
+  });
+
+  it('레시피 id가 중복되면 corrupted', () => {
+    const recipes = [makeRecipe({ id: 'dup', photoId: 'p1' }), makeRecipe({ id: 'dup' })];
+    expect(validateBackup(file({ recipes }))).toEqual({ ok: false, reason: 'corrupted' });
+  });
+
+  it('사진 id가 중복되면 corrupted', () => {
+    const photos = [photo, { ...photo }];
+    expect(validateBackup(file({ photos }))).toEqual({ ok: false, reason: 'corrupted' });
+  });
+
   it('재료를 다시 정리하고 ingredientNames는 파일 값을 버리고 다시 계산한다', () => {
     const recipe = {
       ...makeRecipe({ id: 'r1' }),

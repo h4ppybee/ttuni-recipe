@@ -22,10 +22,14 @@ export type ValidateResult = { ok: true; data: BackupFile } | { ok: false; reaso
 
 type Obj = Record<string, unknown>;
 
+function hasDuplicates(ids: string[]): boolean {
+  return new Set(ids).size !== ids.length;
+}
+
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isStr = (v: unknown): v is string => typeof v === 'string';
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-const isImageDataUrl = (v: unknown) => isStr(v) && v.startsWith('data:image/');
+const isImageDataUrl = (v: unknown) => isStr(v) && /^data:image\/[\w.+-]+;base64,/.test(v);
 
 function isIngredient(v: unknown): v is Ingredient {
   return isObj(v) && isStr(v.name) && isStr(v.amount);
@@ -63,7 +67,7 @@ function toRecipe(v: unknown): Recipe | undefined {
 }
 
 function isBackupPhoto(v: unknown): v is BackupPhoto {
-  return isObj(v) && isStr(v.id) && isImageDataUrl(v.full) && isImageDataUrl(v.thumb);
+  return isObj(v) && isStr(v.id) && v.id !== '' && isImageDataUrl(v.full) && isImageDataUrl(v.thumb);
 }
 
 export function validateBackup(json: unknown): ValidateResult {
@@ -76,11 +80,17 @@ export function validateBackup(json: unknown): ValidateResult {
   if (!json.photos.every(isBackupPhoto)) {
     return { ok: false, reason: 'corrupted' };
   }
+  if (hasDuplicates(json.photos.map((p) => p.id))) {
+    return { ok: false, reason: 'corrupted' };
+  }
   const recipes = json.recipes.map(toRecipe);
   if (recipes.some((r) => r === undefined)) {
     return { ok: false, reason: 'corrupted' };
   }
   const validRecipes = recipes as Recipe[];
+  if (hasDuplicates(validRecipes.map((r) => r.id))) {
+    return { ok: false, reason: 'corrupted' };
+  }
   const photoIds = new Set(json.photos.map((p) => p.id));
   if (validRecipes.some((r) => r.photoId !== undefined && !photoIds.has(r.photoId))) {
     return { ok: false, reason: 'corrupted' };

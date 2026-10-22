@@ -1,6 +1,14 @@
 export type LinkPart = { type: 'text'; value: string } | { type: 'link'; value: string; href: string };
 
-const URL_PATTERN = /https?:\/\/[^\s<>"'ᄀ-ᇿ　-〿㄰-㆏가-힣＀-￯]+/g;
+const URL_PATTERN =
+  /https?:\/\/[^\s<>"'ᄀ-ᇿ‘-‟…　-〿㄰-㆏가-힣＀-￯]+/g;
+// ᄀ-ᇿ: 한글 자모(Hangul Jamo)
+// ‘-‟: iOS 스마트 따옴표(‘ ’ ‚ ‛ “ ” „ ‟)
+// …: 말줄임표(…)
+// 　-〿: CJK 기호·구두점(전각 공백, 「」등 포함)
+// ㄰-㆏: 한글 호환 자모
+// 가-힣: 한글 완성형 음절(가-힣)
+// ＀-￯: 전각 문자(＀-￯)
 const TRAILING = '.,!?;:)]}\'"';
 
 function schemePrefixLength(raw: string): number {

@@ -62,4 +62,12 @@ describe('linkify', () => {
   it('호스트가 비어 트리밍되면 링크로 만들지 않는다', () => {
     expect(linkify('https://.')).toEqual([{ type: 'text', value: 'https://.' }]);
   });
+
+  it('iOS 스마트 따옴표로 감싼 링크는 양쪽 따옴표를 뺀다', () => {
+    expect(linkify('“https://a.com”')).toEqual([
+      { type: 'text', value: '“' },
+      { type: 'link', value: 'https://a.com', href: 'https://a.com' },
+      { type: 'text', value: '”' },
+    ]);
+  });
 });
