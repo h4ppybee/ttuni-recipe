@@ -1,10 +1,18 @@
+import type { KeyboardEvent } from 'react';
 import type { Recipe } from '../types';
 import { Card } from './ui/Card';
 import { RecipeThumb } from './RecipeThumb';
 
 export function RecipeCard({ recipe, onClick }: { recipe: Recipe; onClick: () => void }) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter') {
+      return;
+    }
+    onClick();
+  };
+
   return (
-    <Card pressable role="link" tabIndex={0} onClick={onClick} onKeyDown={(e) => e.key === 'Enter' && onClick()}>
+    <Card pressable role="link" tabIndex={0} onClick={onClick} onKeyDown={handleKeyDown}>
       <div className="flex items-center gap-3">
         <RecipeThumb photoId={recipe.photoId} />
         <div className="min-w-0 flex-1">

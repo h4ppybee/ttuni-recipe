@@ -13,7 +13,8 @@ interface DialogProps {
 export function Dialog({ open, title, description, confirmLabel, onConfirm, onClose }: DialogProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const confirmRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -32,7 +33,11 @@ export function Dialog({ open, title, description, confirmLabel, onConfirm, onCl
     if (!open) {
       return;
     }
-    confirmRef.current?.focus();
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus();
+    };
   }, [open]);
 
   useEffect(() => {
@@ -68,10 +73,10 @@ export function Dialog({ open, title, description, confirmLabel, onConfirm, onCl
           </p>
         )}
         <div className="mt-6 flex gap-2">
-          <Button variant="weak" block onClick={onClose}>
+          <Button ref={closeRef} variant="weak" block onClick={onClose}>
             닫기
           </Button>
-          <Button ref={confirmRef} block onClick={onConfirm}>
+          <Button block onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

@@ -36,7 +36,8 @@ export function RecipeListPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="레시피 이름이나 재료로 찾아보세요"
-            className={cx(fieldClass, 'h-12 py-0 pl-11 pr-12')}
+            aria-label="레시피 검색"
+            className={cx(fieldClass, 'h-12 py-0 pl-11 pr-12 [&::-webkit-search-cancel-button]:appearance-none')}
           />
           {query && (
             <IconButton label="검색어 지우기" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={() => setQuery('')}>
@@ -52,7 +53,7 @@ export function RecipeListPage() {
           <EmptyState message="찾는 레시피가 없어요." actionLabel="새 레시피 만들기" onAction={goNew} />
         )}
         {results.length > 0 && (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-3 pb-20">
             {results.map((recipe) => (
               <li key={recipe.id}>
                 <RecipeCard recipe={recipe} onClick={() => navigate(`/recipes/${recipe.id}`)} />

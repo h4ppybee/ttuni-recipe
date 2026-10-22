@@ -228,7 +228,7 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - 오른쪽 16px, 탭 바 위 16px. `aria-label="새 레시피 만들기"`.
 
 ### 아이콘 버튼
-- 40×40, `rounded-pill`, 아이콘 22px `muted`. 누름·hover 시 `surface-soft` 배경. `aria-label` 필수.
+- 44×44, `rounded-pill`, 아이콘 22px `muted`. 누름·hover 시 `surface-soft` 배경. `aria-label` 필수.
 - 아이콘은 `lucide-react`, stroke width 2 하나로 통일한다.
 
 ### 입력 (`TextField`, `TextArea`)
@@ -263,7 +263,10 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - 제목 `title-md`, 설명 `body-md` `body-soft`. 버튼 두 개 가로 배치: 왼쪽 `weak` "닫기", 오른쪽 `primary`.
 
 ### 토스트 (`Toast`)
-- 화면 아래(탭 바 위 16px) 가운데, `ink` 배경 흰 글자 `body-md`, `rounded-control`, `shadow-floating`, 2.5초 뒤 사라짐.
+- 화면 아래 가운데, `ink` 배경 흰 글자 `body-md`, `rounded-control`, `shadow-floating`, 2.5초 뒤 사라짐.
+- 하단 여백은 화면에 따라 다르다(`ToastProvider`의 `withTabBar`로 구분).
+  - 탭 바가 있는 화면: `calc(56px + env(safe-area-inset-bottom) + 88px)`. FAB(탭 바 위 16px, 56px 높이) 위에 16px 간격을 두고 뜬다.
+  - 탭 바가 없는 화면(편집 화면): `calc(env(safe-area-inset-bottom) + 92px)`. 하단 고정 저장 버튼(52px 버튼 + 위 12px + 아래 12px 패딩) 위에 16px 간격을 두고 뜬다.
 
 ### 빈 상태 (`EmptyState`)
 - 가운데 토마토 일러스트(80px) + 문구(`body-md`, `body-soft`) + 필요하면 `secondary` 버튼.

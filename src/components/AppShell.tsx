@@ -14,7 +14,7 @@ export function AppShell() {
   }, []);
 
   return (
-    <ToastProvider>
+    <ToastProvider withTabBar={withTabBar}>
       <div
         className="mx-auto min-h-dvh max-w-[480px]"
         style={{ paddingBottom: withTabBar ? 'calc(56px + env(safe-area-inset-bottom) + 16px)' : undefined }}
