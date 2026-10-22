@@ -10,6 +10,10 @@ describe('pieceAt', () => {
   it('줄바꿈도 조각 경계로 본다', () => {
     expect(pieceAt('대파\n양파', 4)).toEqual({ start: 3, end: 5, piece: '양파' });
   });
+
+  it('숫자 사이의 쉼표는 조각 경계로 보지 않는다', () => {
+    expect(pieceAt('물 1,000ml', 9)).toEqual({ start: 0, end: 9, piece: '물 1,000ml' });
+  });
 });
 
 describe('suggestIngredientNames', () => {
@@ -40,5 +44,10 @@ describe('replacePieceName', () => {
 
   it('양이 없으면 재료명만 넣는다', () => {
     expect(replacePieceName('대', 1, '대파')).toEqual({ text: '대파', caret: 2 });
+  });
+
+  it('숫자 사이의 쉼표가 있어도 조각 전체를 바꾼다', () => {
+    const result = replacePieceName('물 1,000ml', 9, '우유');
+    expect(result.text).toBe('우유 1,000ml');
   });
 });

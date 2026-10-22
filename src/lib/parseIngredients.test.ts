@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatIngredients, parseIngredients, parsePiece } from './parseIngredients';
+import { formatIngredients, isSeparatorAt, parseIngredients, parsePiece } from './parseIngredients';
 
 describe('parsePiece', () => {
   it.each([
@@ -50,6 +50,32 @@ describe('parseIngredients', () => {
       { name: '대파', amount: '' },
       { name: '양파', amount: '' },
     ]);
+  });
+});
+
+describe('isSeparatorAt', () => {
+  it('숫자 사이의 쉼표는 구분자가 아니다', () => {
+    expect(isSeparatorAt('1,000', 1)).toBe(false);
+  });
+
+  it('앞이 숫자가 아니면 구분자다', () => {
+    expect(isSeparatorAt('a,b', 1)).toBe(true);
+  });
+
+  it('뒤가 숫자가 아니면 구분자다', () => {
+    expect(isSeparatorAt('1,a', 1)).toBe(true);
+  });
+
+  it('앞이 숫자가 아니고 뒤가 숫자면 구분자다', () => {
+    expect(isSeparatorAt('a,1', 1)).toBe(true);
+  });
+
+  it('줄바꿈은 항상 구분자다', () => {
+    expect(isSeparatorAt('a\nb', 1)).toBe(true);
+  });
+
+  it('전각 쉼표는 항상 구분자다', () => {
+    expect(isSeparatorAt('a，b', 1)).toBe(true);
   });
 });
 

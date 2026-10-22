@@ -1,6 +1,5 @@
-import { parsePiece } from './parseIngredients';
+import { isSeparatorAt, parsePiece } from './parseIngredients';
 
-const BOUNDARY = /[,，\n]/;
 const MAX_SUGGESTIONS = 8;
 
 export interface PieceRange {
@@ -11,11 +10,11 @@ export interface PieceRange {
 
 export function pieceAt(text: string, caret: number): PieceRange {
   let start = caret;
-  while (start > 0 && !BOUNDARY.test(text[start - 1])) {
+  while (start > 0 && !isSeparatorAt(text, start - 1)) {
     start -= 1;
   }
   let end = caret;
-  while (end < text.length && !BOUNDARY.test(text[end])) {
+  while (end < text.length && !isSeparatorAt(text, end)) {
     end += 1;
   }
   return { start, end, piece: text.slice(start, end) };
