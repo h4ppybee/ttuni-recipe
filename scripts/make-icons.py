@@ -1,8 +1,15 @@
-"""tomato.png로 PWA 아이콘을 만든다. 실행: python3 scripts/make-icons.py <tomato.png 경로>"""
+"""tomato.png로 PWA 아이콘을 만든다. 실행: python3 scripts/make-icons.py <tomato.png 경로>
+
+원본 이미지가 512px보다 작으면 확대(업스케일)되어 품질이 떨어질 수 있다.
+"""
 import sys
 from pathlib import Path
 
 from PIL import Image
+
+if len(sys.argv) < 2:
+    print("사용법: python3 scripts/make-icons.py <tomato.png 경로>")
+    sys.exit(1)
 
 src = Image.open(sys.argv[1]).convert("RGBA")
 out = Path(__file__).resolve().parent.parent / "public"

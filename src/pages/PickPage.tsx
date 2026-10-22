@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Chip } from '../components/ui/Chip';
 import { EmptyState } from '../components/ui/EmptyState';
 import { TextField } from '../components/ui/TextField';
+import { useToast } from '../components/ui/toastContext';
 import { TopBar } from '../components/ui/TopBar';
 import { recipeRepo } from '../db/recipeRepo';
 import { pickRandom } from '../lib/pickRandom';
@@ -16,6 +17,7 @@ type PickState = { kind: 'idle' } | { kind: 'none' } | { kind: 'picked'; recipe:
 
 export function PickPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const names = useLiveQuery(() => recipeRepo.listIngredientNames(), []);
   const [selected, setSelected] = useState<string[]>(getPickSelection);
   const [filter, setFilter] = useState('');
@@ -52,7 +54,13 @@ export function PickPage() {
   };
 
   const draw = async (excludeId?: string) => {
-    const candidates = await recipeRepo.findCandidates(effective);
+    let candidates: Recipe[];
+    try {
+      candidates = await recipeRepo.findCandidates(effective);
+    } catch {
+      toast('레시피를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     const recipe = pickRandom(candidates, excludeId);
     seqRef.current += 1;
     setState(recipe ? { kind: 'picked', recipe, seq: seqRef.current } : { kind: 'none' });

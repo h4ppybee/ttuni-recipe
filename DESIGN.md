@@ -25,7 +25,7 @@ colors:
   warning-text: "#9A6700"
 
 typography:
-  fontFamily: "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', Roboto, sans-serif"
+  fontFamily: "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', Roboto, sans-serif"
   title-lg:      { fontSize: 24px, fontWeight: 700, lineHeight: 1.35, letterSpacing: -0.3px }
   title-md:      { fontSize: 19px, fontWeight: 700, lineHeight: 1.4,  letterSpacing: -0.2px }
   title-sm:      { fontSize: 17px, fontWeight: 600, lineHeight: 1.45, letterSpacing: -0.2px }
@@ -135,7 +135,7 @@ UI를 만들거나 고칠 때는 이 문서를 먼저 읽는다. 여기 없는 �
   --shadow-card: 0 1px 4px rgba(0, 23, 51, 0.04), 0 2px 12px rgba(0, 23, 51, 0.04);
   --shadow-floating: 0 8px 24px rgba(0, 23, 51, 0.12);
 
-  --font-sans: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", Roboto, sans-serif;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", Roboto, sans-serif;
 }
 ```
 

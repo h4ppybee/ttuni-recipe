@@ -50,6 +50,8 @@ export function SettingsPage() {
       const { blob, fileName } = await backupService.build();
       setFile(new File([blob], fileName, { type: 'application/json' }));
       toast('백업 파일을 만들었어요.');
+    } catch {
+      toast('백업 파일을 만들지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setBuilding(false);
     }
@@ -78,7 +80,15 @@ export function SettingsPage() {
   };
 
   const restore = async (picked: File) => {
-    const result = await backupService.restore(await picked.text()).catch(() => undefined);
+    let text: string;
+    try {
+      text = await picked.text();
+    } catch {
+      setFile(undefined);
+      toast('불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    const result = await backupService.restore(text).catch(() => undefined);
     // 불러오기로 데이터가 바뀌었을 수 있으니 미리 만든 백업 파일은 버린다.
     setFile(undefined);
     if (!result) {
@@ -89,8 +99,8 @@ export function SettingsPage() {
       toast(result.reason === 'not-backup' ? '뚜니레시피 백업 파일이 아니에요.' : '백업 파일이 손상됐어요.');
       return;
     }
-    const { added, updated } = result.counts;
-    toast(`새로 ${added}개, 바뀐 ${updated}개를 불러왔어요.`);
+    const { added, updated, unchanged } = result.counts;
+    toast(`새로 ${added}개, 바뀐 ${updated}개, 그대로 ${unchanged}개예요.`);
   };
 
   // oxlint-disable-next-line react/purity -- 화면에 보일 때마다 최신 시각으로 다시 계산해야 하는 값이라 memo하지 않는다.

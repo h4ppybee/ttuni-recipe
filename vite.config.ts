@@ -13,7 +13,6 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],
       manifest: {
         name: '뚜니레시피',
         short_name: '뚜니레시피',

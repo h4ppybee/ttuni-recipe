@@ -47,7 +47,7 @@
   --shadow-card: 0 1px 4px rgba(0, 23, 51, 0.04), 0 2px 12px rgba(0, 23, 51, 0.04);
   --shadow-floating: 0 8px 24px rgba(0, 23, 51, 0.12);
 
-  --font-sans: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", Roboto, sans-serif;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", Roboto, sans-serif;
 }
 
 @layer base {
