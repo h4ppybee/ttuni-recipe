@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRecipeRepo, type RecipeRepo } from './recipeRepo';
 import { TtuniDB } from './schema';
 
@@ -119,5 +119,25 @@ describe('recipeRepo', () => {
     expect((await repo.findCandidates(['계란', '대파'])).map((r) => r.id)).toEqual([a]);
     expect((await repo.findCandidates(['대파', '두부'])).map((r) => r.id).sort()).toEqual([a, b].sort());
     expect(await repo.findCandidates([])).toEqual([]);
+  });
+
+  // iOS Safari에서 인덱스 커서가 'UnknownError: Unable to open cursor'로 실패한 사례가 있어
+  // 재료명 목록과 오저뭐 후보는 커서 없이(getAll) 읽어야 한다.
+  describe('커서를 쓰지 않는다', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('listIngredientNames와 findCandidates가 인덱스 커서를 열지 않는다', async () => {
+      await repo.save({ draft: draft(), photo: { kind: 'keep' } });
+      const openCursor = vi.spyOn(IDBIndex.prototype, 'openCursor');
+      const openKeyCursor = vi.spyOn(IDBIndex.prototype, 'openKeyCursor');
+
+      expect(await repo.listIngredientNames()).toEqual(['계란', '대파']);
+      expect(await repo.findCandidates(['대파'])).toHaveLength(1);
+
+      expect(openCursor).not.toHaveBeenCalled();
+      expect(openKeyCursor).not.toHaveBeenCalled();
+    });
   });
 });

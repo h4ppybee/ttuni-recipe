@@ -81,16 +81,21 @@ export function createRecipeRepo(db: TtuniDB) {
       return db.recipes.count();
     },
 
+    // iOS Safari에서 인덱스 커서가 'UnknownError: Unable to open cursor'로 실패한 적이 있어
+    // 커서(uniqueKeys, anyOf) 대신 getAll(toArray)로 읽고 메모리에서 계산한다. 개인용 규모라 충분하다.
     async listIngredientNames(): Promise<string[]> {
-      const keys = await db.recipes.orderBy('ingredientNames').uniqueKeys();
-      return keys.map(String).sort((a, b) => a.localeCompare(b, 'ko'));
+      const recipes = await db.recipes.toArray();
+      const names = new Set(recipes.flatMap((recipe) => recipe.ingredientNames));
+      return [...names].sort((a, b) => a.localeCompare(b, 'ko'));
     },
 
     async findCandidates(selected: string[]): Promise<Recipe[]> {
       if (selected.length === 0) {
         return [];
       }
-      return db.recipes.where('ingredientNames').anyOf(selected).distinct().toArray();
+      const wanted = new Set(selected);
+      const recipes = await db.recipes.toArray();
+      return recipes.filter((recipe) => recipe.ingredientNames.some((name) => wanted.has(name)));
     },
   };
 }

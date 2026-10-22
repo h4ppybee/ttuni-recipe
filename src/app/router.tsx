@@ -1,5 +1,6 @@
 import { createHashRouter } from 'react-router';
 import { AppShell } from '../components/AppShell';
+import { RouteError } from '../components/RouteError';
 import { PickPage } from '../pages/PickPage';
 import { RecipeDetailPage } from '../pages/RecipeDetailPage';
 import { RecipeEditPage } from '../pages/RecipeEditPage';
@@ -9,6 +10,7 @@ import { SettingsPage } from '../pages/SettingsPage';
 export const router = createHashRouter([
   {
     element: <AppShell />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <RecipeListPage /> },
       { path: 'pick', element: <PickPage /> },

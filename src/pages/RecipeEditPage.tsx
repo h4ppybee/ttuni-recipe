@@ -48,7 +48,8 @@ function NotFound() {
 function RecipeForm({ initial }: { initial?: Recipe }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const knownNames = useLiveQuery(() => recipeRepo.listIngredientNames(), []) ?? [];
+  // 자동완성은 부가 기능이라, 목록을 읽지 못해도 편집 화면은 그대로 쓸 수 있게 빈 목록으로 둔다.
+  const knownNames = useLiveQuery(() => recipeRepo.listIngredientNames().catch(() => []), []) ?? [];
 
   const [name, setName] = useState(initial?.name ?? '');
   const [ingredientText, setIngredientText] = useState(initial ? formatIngredients(initial.ingredients) : '');
