@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { PickResultCard } from '../components/PickResultCard';
 import { Button } from '../components/ui/Button';
@@ -20,20 +20,14 @@ export function PickPage() {
   const [selected, setSelected] = useState<string[]>(getPickSelection);
   const [filter, setFilter] = useState('');
   const [state, setState] = useState<PickState>({ kind: 'idle' });
-  const [seq, setSeq] = useState(0);
+  const seqRef = useRef(0);
 
-  // 이제 어떤 레시피에도 없는 재료는 선택에서 뺀다.
-  useEffect(() => {
-    if (!names) {
-      return;
-    }
-    // oxlint-disable-next-line react/set-state-in-effect
-    setSelected((prev) => prev.filter((n) => names.includes(n)));
-  }, [names]);
+  // 이제 어떤 레시피에도 없는 재료는 화면에 표시하거나 뽑기에 쓰지 않는다.
+  const effective = useMemo(() => (names ? selected.filter((n) => names.includes(n)) : selected), [names, selected]);
 
   useEffect(() => {
-    setPickSelection(selected);
-  }, [selected]);
+    setPickSelection(effective);
+  }, [effective]);
 
   const visibleNames = useMemo(() => {
     const q = filter.trim();
@@ -53,16 +47,15 @@ export function PickPage() {
   }
 
   const toggle = (name: string) => {
-    setSelected((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+    setSelected(effective.includes(name) ? effective.filter((n) => n !== name) : [...effective, name]);
     setState({ kind: 'idle' });
   };
 
   const draw = async (excludeId?: string) => {
-    const candidates = await recipeRepo.findCandidates(selected);
+    const candidates = await recipeRepo.findCandidates(effective);
     const recipe = pickRandom(candidates, excludeId);
-    const nextSeq = seq + 1;
-    setSeq(nextSeq);
-    setState(recipe ? { kind: 'picked', recipe, seq: nextSeq } : { kind: 'none' });
+    seqRef.current += 1;
+    setState(recipe ? { kind: 'picked', recipe, seq: seqRef.current } : { kind: 'none' });
   };
 
   return (
@@ -73,18 +66,25 @@ export function PickPage() {
         <TextField value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="재료 찾기" aria-label="재료 찾기" />
         <div className="flex flex-wrap gap-2">
           {visibleNames.map((name) => (
-            <Chip key={name} label={name} selected={selected.includes(name)} onClick={() => toggle(name)} />
+            <Chip key={name} label={name} selected={effective.includes(name)} onClick={() => toggle(name)} />
           ))}
         </div>
-        {selected.length > 0 && (
-          <Button variant="text" className="self-start px-0" onClick={() => setSelected([])}>
+        {effective.length > 0 && (
+          <Button
+            variant="text"
+            className="self-start px-0"
+            onClick={() => {
+              setSelected([]);
+              setState({ kind: 'idle' });
+            }}
+          >
             선택 해제
           </Button>
         )}
-        <Button block disabled={selected.length === 0} onClick={() => draw()}>
+        <Button block disabled={effective.length === 0} onClick={() => draw()}>
           오늘 저녁 뭐?
         </Button>
-        {selected.length === 0 && <p className="text-center text-caption text-muted">재료를 1개 이상 골라 주세요.</p>}
+        {effective.length === 0 && <p className="text-center text-caption text-muted">재료를 1개 이상 골라 주세요.</p>}
         {state.kind === 'none' && (
           <p className="text-center text-body-md text-body-soft">
             고른 재료로 만들 수 있는 레시피가 없어요. 다른 재료도 골라 보세요.
@@ -94,7 +94,7 @@ export function PickPage() {
           <PickResultCard
             key={state.seq}
             recipe={state.recipe}
-            selected={selected}
+            selected={effective}
             onRetry={() => draw(state.recipe.id)}
             onOpen={() => navigate(`/recipes/${state.recipe.id}`)}
           />

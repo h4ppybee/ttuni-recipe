@@ -34,10 +34,15 @@ export function RecipeDetailPage() {
   }
 
   const remove = async () => {
+    const targetId = recipe.id;
     setConfirmOpen(false);
-    await recipeRepo.remove(recipe.id);
     navigate('/', { replace: true });
-    toast('레시피를 삭제했어요.');
+    try {
+      await recipeRepo.remove(targetId);
+      toast('레시피를 삭제했어요.');
+    } catch {
+      toast('삭제하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    }
   };
 
   return (
