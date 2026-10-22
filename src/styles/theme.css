@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --color-primary: #E5533A;
+  --color-primary-pressed: #C93E27;
+  --color-primary-disabled: #F6C5BA;
+  --color-primary-surface: #FDECE8;
+  --color-primary-text: #D2452D;
+  --color-leaf: #7C7F3F;
+  --color-ink: #191F28;
+  --color-body: #4E5968;
+  --color-body-soft: #6B7684;
+  --color-muted: #8B95A1;
+  --color-muted-soft: #B0B8C1;
+  --color-hairline: #EEF0F3;
+  --color-canvas: #F7F8FA;
+  --color-surface-card: #FFFFFF;
+  --color-surface-soft: #F2F4F6;
+  --color-surface-strong: #E5E8EB;
+  --color-on-primary: #FFFFFF;
+  --color-warning-surface: #FFF7E6;
+  --color-warning-text: #9A6700;
+  --color-white: #FFFFFF;
+  --color-transparent: transparent;
+  --color-overlay: rgba(0, 0, 0, 0.4);
+
+  --text-*: initial;
+  --text-title-lg: 24px;  --text-title-lg--line-height: 1.35; --text-title-lg--letter-spacing: -0.3px; --text-title-lg--font-weight: 700;
+  --text-title-md: 19px;  --text-title-md--line-height: 1.4;  --text-title-md--letter-spacing: -0.2px; --text-title-md--font-weight: 700;
+  --text-title-sm: 17px;  --text-title-sm--line-height: 1.45; --text-title-sm--letter-spacing: -0.2px; --text-title-sm--font-weight: 600;
+  --text-body-lg: 17px;   --text-body-lg--line-height: 1.6;   --text-body-lg--letter-spacing: -0.2px;
+  --text-body-md: 15px;   --text-body-md--line-height: 1.5;   --text-body-md--letter-spacing: -0.1px;
+  --text-body-strong: 15px; --text-body-strong--line-height: 1.5; --text-body-strong--letter-spacing: -0.1px; --text-body-strong--font-weight: 600;
+  --text-caption: 13px;   --text-caption--line-height: 1.45;
+  --text-caption-strong: 12px; --text-caption-strong--line-height: 1.4; --text-caption-strong--font-weight: 600;
+  --text-button: 17px;    --text-button--line-height: 1.2;    --text-button--letter-spacing: -0.2px; --text-button--font-weight: 600;
+  --text-tab-label: 11px; --text-tab-label--line-height: 1.2; --text-tab-label--font-weight: 600;
+
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 1px 4px rgba(0, 23, 51, 0.04), 0 2px 12px rgba(0, 23, 51, 0.04);
+  --shadow-floating: 0 8px 24px rgba(0, 23, 51, 0.12);
+
+  --font-sans: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    min-height: 100dvh;
+  }
+}
