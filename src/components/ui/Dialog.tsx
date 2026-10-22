@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { Button } from './Button';
 
 interface DialogProps {
@@ -11,6 +11,10 @@ interface DialogProps {
 }
 
 export function Dialog({ open, title, description, confirmLabel, onConfirm, onClose }: DialogProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -24,6 +28,24 @@ export function Dialog({ open, title, description, confirmLabel, onConfirm, onCl
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    confirmRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
@@ -32,19 +54,24 @@ export function Dialog({ open, title, description, confirmLabel, onConfirm, onCl
       <div
         role="alertdialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
         className="w-full max-w-[400px] rounded-card bg-surface-card p-6 shadow-floating"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="dialog-title" className="text-title-md text-ink">
+        <h2 id={titleId} className="text-title-md text-ink">
           {title}
         </h2>
-        {description && <p className="mt-2 text-body-md text-body-soft">{description}</p>}
+        {description && (
+          <p id={descriptionId} className="mt-2 text-body-md text-body-soft">
+            {description}
+          </p>
+        )}
         <div className="mt-6 flex gap-2">
           <Button variant="weak" block onClick={onClose}>
             닫기
           </Button>
-          <Button block onClick={onConfirm}>
+          <Button ref={confirmRef} block onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

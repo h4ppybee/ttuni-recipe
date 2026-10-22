@@ -17,7 +17,7 @@ export function createRecipeRepo(db: TtuniDB) {
       if (hasErrors(validateDraft(draft))) {
         throw new Error('INVALID_DRAFT');
       }
-      const recipeId = id ?? crypto.randomUUID();
+      const recipeId = id || crypto.randomUUID();
       const newPhotoId = photo.kind === 'replace' ? crypto.randomUUID() : undefined;
       const ingredients = normalizeIngredients(draft.ingredients);
       const now = Date.now();
@@ -83,7 +83,7 @@ export function createRecipeRepo(db: TtuniDB) {
 
     async listIngredientNames(): Promise<string[]> {
       const keys = await db.recipes.orderBy('ingredientNames').uniqueKeys();
-      return keys.map(String);
+      return keys.map(String).sort((a, b) => a.localeCompare(b, 'ko'));
     },
 
     async findCandidates(selected: string[]): Promise<Recipe[]> {

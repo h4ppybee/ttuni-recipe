@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const SRC = join(__dirname, '..');
 const files = readdirSync(SRC, { recursive: true, encoding: 'utf8' })
-  .filter((f) => f.endsWith('.tsx') || (f.endsWith('.ts') && !f.endsWith('.test.ts')))
+  .filter((f) => (f.endsWith('.tsx') && !f.endsWith('.test.tsx')) || (f.endsWith('.ts') && !f.endsWith('.test.ts')))
   .map((f) => join(SRC, f));
 
 const FORBIDDEN: [RegExp, string][] = [

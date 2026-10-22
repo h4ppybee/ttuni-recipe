@@ -17,6 +17,9 @@ function toJpeg(bitmap: ImageBitmap, maxSide: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
+        // 인코딩이 끝났으니(성공이든 실패든) 캔버스가 들고 있던 픽셀 메모리를 바로 비운다.
+        canvas.width = 0;
+        canvas.height = 0;
         if (!blob) {
           reject(new Error('ENCODE_FAILED'));
           return;

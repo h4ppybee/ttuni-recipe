@@ -55,6 +55,12 @@ describe('recipeRepo', () => {
     );
   });
 
+  it('id가 빈 문자열이면 새 레시피로 취급해 비어 있지 않은 id를 만든다', async () => {
+    const id = await repo.save({ id: '', draft: draft(), photo: { kind: 'keep' } });
+    expect(id).not.toBe('');
+    expect(await repo.get(id)).toBeDefined();
+  });
+
   it('사진을 바꾸면 이전 사진을 지우고, 빼면 사진 참조와 사진을 함께 지운다', async () => {
     const id = await repo.save({ draft: draft(), photo: { kind: 'replace', ...blobs() } });
     const first = (await repo.get(id))?.photoId;
@@ -94,6 +100,14 @@ describe('recipeRepo', () => {
       photo: { kind: 'keep' },
     });
     expect((await repo.listIngredientNames()).sort()).toEqual(['계란', '대파', '두부']);
+  });
+
+  it('재료명 목록을 한글 가나다순으로 정렬해서 돌려준다', async () => {
+    await repo.save({
+      draft: { ...draft(), ingredients: [{ name: '파', amount: '' }, { name: '감자', amount: '' }, { name: '양파', amount: '' }] },
+      photo: { kind: 'keep' },
+    });
+    expect(await repo.listIngredientNames()).toEqual(['감자', '양파', '파']);
   });
 
   it('고른 재료가 하나라도 들어간 레시피를 후보로 돌려준다', async () => {

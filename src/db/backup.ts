@@ -7,9 +7,12 @@ import { db as defaultDb, type TtuniDB } from './schema';
 export type ImportResult = { ok: true; counts: MergePlan['counts'] } | { ok: false; reason: 'not-backup' | 'corrupted' };
 
 export async function buildBackupBlob(db: TtuniDB): Promise<{ blob: Blob; fileName: string }> {
-  const recipes = await db.recipes.toArray();
-  const photos = await db.photos.toArray();
-  // 큰 문자열 하나를 만들지 않도록 조각 배열로 모은다(spec 8절).
+  // recipes/photos를 하나의 읽기 트랜잭션 안에서 함께 읽어 둘 사이에 다른 쓰기가 끼어들지 않게 한다.
+  const { recipes, photos } = await db.transaction('r', db.recipes, db.photos, async () => ({
+    recipes: await db.recipes.toArray(),
+    photos: await db.photos.toArray(),
+  }));
+  // base64 변환은 트랜잭션 밖에서 한다(큰 문자열 하나를 만들지 않도록 조각 배열로 모은다, spec 8절).
   const parts: string[] = [
     `{"app":${JSON.stringify(BACKUP_APP)},"version":${BACKUP_VERSION},"exportedAt":${Date.now()},`,
     `"recipes":${JSON.stringify(recipes)},"photos":[`,

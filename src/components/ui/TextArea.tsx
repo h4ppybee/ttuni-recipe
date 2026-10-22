@@ -14,7 +14,13 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function 
   return (
     <label className="block">
       {label && <FieldLabel>{label}</FieldLabel>}
-      <textarea ref={ref} rows={rows} className={cx(fieldClass, 'resize-none', className)} {...rest} />
+      <textarea
+        ref={ref}
+        rows={rows}
+        aria-invalid={error ? true : undefined}
+        className={cx(fieldClass, 'resize-none', className)}
+        {...rest}
+      />
       <FieldError message={error} />
     </label>
   );
