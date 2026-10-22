@@ -1,7 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { RouterProvider } from 'react-router';
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './styles/theme.css';
+import { router } from './app/router';
 
 const root = document.getElementById('root');
 if (!root) {
@@ -10,6 +12,6 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <div className="p-4 text-title-lg">뚜니레시피</div>
+    <RouterProvider router={router} />
   </StrictMode>,
 );
