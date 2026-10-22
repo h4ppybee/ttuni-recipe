@@ -14,6 +14,7 @@ import { TopBar } from '../components/ui/TopBar';
 import { recipeRepo, type PhotoChange } from '../db/recipeRepo';
 import { useBlobUrl, usePhotoUrl } from '../hooks/usePhotoUrl';
 import { isQuotaError } from '../lib/errors';
+import { hasInAppHistory } from '../lib/history';
 import { makePhotoBlobs } from '../lib/image';
 import { formatIngredients, parseIngredients } from '../lib/parseIngredients';
 import { newStep, type StepItem } from '../lib/steps';
@@ -82,8 +83,26 @@ function RecipeForm({ initial }: { initial?: Recipe }) {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [dirty]);
 
-  const touch = <T,>(setter: (v: T) => void) => (v: T) => {
-    setter(v);
+  const onNameChange = (v: string) => {
+    setName(v);
+    setDirty(true);
+    setErrors((prev) => (prev.name ? { ...prev, name: undefined } : prev));
+  };
+
+  const onIngredientsChange = (v: string) => {
+    setIngredientText(v);
+    setDirty(true);
+    setErrors((prev) => (prev.ingredients ? { ...prev, ingredients: undefined } : prev));
+  };
+
+  const onStepsChange = (v: StepItem[]) => {
+    setSteps(v);
+    setDirty(true);
+    setErrors((prev) => (prev.steps ? { ...prev, steps: undefined } : prev));
+  };
+
+  const onMemoChange = (v: string) => {
+    setMemo(v);
     setDirty(true);
   };
 
@@ -117,21 +136,21 @@ function RecipeForm({ initial }: { initial?: Recipe }) {
       const savedId = await recipeRepo.save({ id: initial?.id, draft, photo });
       leavingRef.current = true;
       setDirty(false);
-      // 수정은 상세에서 왔으므로 되돌아가고, 새 레시피는 상세로 바꿔 들어간다(히스토리 중복 방지).
-      if (initial) {
+      // 수정은 앱 안에서 들어온 히스토리가 있으면 되돌아가고, 그렇지 않으면 상세로 바꿔 들어간다(히스토리 중복 방지).
+      if (initial && hasInAppHistory()) {
         navigate(-1);
       } else {
         navigate(`/recipes/${savedId}`, { replace: true });
       }
       toast('레시피를 저장했어요.');
+      // 저장 성공 후에는 페이지가 이동으로 언마운트될 때까지 버튼을 계속 비활성 상태로 둔다(setSaving(false) 호출 안 함).
     } catch (error) {
+      setSaving(false);
       if (isQuotaError(error)) {
         toast('저장 공간이 부족해요. 백업 후 오래된 사진을 정리해 주세요.');
         return;
       }
       toast('저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -148,10 +167,10 @@ function RecipeForm({ initial }: { initial?: Recipe }) {
             setDirty(true);
           }}
         />
-        <TextField label="이름" value={name} onChange={(e) => touch(setName)(e.target.value)} placeholder="토마토 달걀볶음" error={errors.name} />
-        <IngredientInput value={ingredientText} onChange={touch(setIngredientText)} knownNames={knownNames} error={errors.ingredients} />
-        <StepEditor steps={steps} onChange={touch(setSteps)} error={errors.steps} />
-        <TextArea label="메모" rows={3} value={memo} onChange={(e) => touch(setMemo)(e.target.value)} placeholder="출처 링크나 팁을 적어 두세요" />
+        <TextField label="이름" value={name} onChange={(e) => onNameChange(e.target.value)} placeholder="토마토 달걀볶음" error={errors.name} />
+        <IngredientInput value={ingredientText} onChange={onIngredientsChange} knownNames={knownNames} error={errors.ingredients} />
+        <StepEditor steps={steps} onChange={onStepsChange} error={errors.steps} />
+        <TextArea label="메모" rows={3} value={memo} onChange={(e) => onMemoChange(e.target.value)} placeholder="출처 링크나 팁을 적어 두세요" />
       </div>
       <div
         className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] bg-canvas px-4 pt-3"

@@ -1,6 +1,7 @@
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
+import { hasInAppHistory } from '../../lib/history';
 import { IconButton } from './IconButton';
 
 interface TopBarProps {
@@ -13,9 +14,8 @@ export function TopBar({ title, back = false, right }: TopBarProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    // react-router의 history state에 앱 안에서 쌓인 idx가 없으면(새로고침 진입 등) 뒤로 갈 곳이 없으므로 홈으로 보낸다.
-    const idx = (window.history.state as { idx?: number } | null)?.idx;
-    if (!idx) {
+    // 앱 안에서 쌓인 히스토리가 없으면(새로고침 진입 등) 뒤로 갈 곳이 없으므로 홈으로 보낸다.
+    if (!hasInAppHistory()) {
       navigate('/', { replace: true });
       return;
     }

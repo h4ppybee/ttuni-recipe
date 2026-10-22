@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { pieceAt, replacePieceName, suggestIngredientNames } from '../lib/ingredientCaret';
 import { parseIngredients, parsePiece } from '../lib/parseIngredients';
 import { Chip } from './ui/Chip';
@@ -24,12 +25,14 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
 
   const choose = (name: string) => {
     const next = replacePieceName(value, caret, name);
-    onChange(next.text);
-    setCaret(next.caret);
-    requestAnimationFrame(() => {
-      ref.current?.focus();
-      ref.current?.setSelectionRange(next.caret, next.caret);
+    // 칩 탭 후에도 iOS 키보드가 내려가지 않도록, 상태 반영을 동기적으로 끝내고
+    // 같은 핸들러 안에서 바로 포커스를 되돌린다(requestAnimationFrame 사용 금지).
+    flushSync(() => {
+      onChange(next.text);
+      setCaret(next.caret);
     });
+    ref.current?.focus();
+    ref.current?.setSelectionRange(next.caret, next.caret);
   };
 
   return (
