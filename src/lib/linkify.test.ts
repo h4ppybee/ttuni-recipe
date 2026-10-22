@@ -36,4 +36,30 @@ describe('linkify', () => {
   it('javascript: 같은 다른 스킴은 링크로 만들지 않는다', () => {
     expect(linkify('javascript:alert(1)')).toEqual([{ type: 'text', value: 'javascript:alert(1)' }]);
   });
+
+  it('URL에 바로 붙은 한글 조사는 링크에서 뺀다', () => {
+    expect(linkify('https://a.com에서 봄')).toEqual([
+      { type: 'link', value: 'https://a.com', href: 'https://a.com' },
+      { type: 'text', value: '에서 봄' },
+    ]);
+  });
+
+  it('전각 문장부호로 감싼 링크는 양쪽 부호를 뺀다', () => {
+    expect(linkify('「https://a.com」')).toEqual([
+      { type: 'text', value: '「' },
+      { type: 'link', value: 'https://a.com', href: 'https://a.com' },
+      { type: 'text', value: '」' },
+    ]);
+  });
+
+  it('퍼센트 인코딩된 경로는 유지하고, 짝 안 맞는 닫는 괄호만 뺀다', () => {
+    expect(linkify('https://a.com/x?q=%EB%A0%88)')).toEqual([
+      { type: 'link', value: 'https://a.com/x?q=%EB%A0%88', href: 'https://a.com/x?q=%EB%A0%88' },
+      { type: 'text', value: ')' },
+    ]);
+  });
+
+  it('호스트가 비어 트리밍되면 링크로 만들지 않는다', () => {
+    expect(linkify('https://.')).toEqual([{ type: 'text', value: 'https://.' }]);
+  });
 });
