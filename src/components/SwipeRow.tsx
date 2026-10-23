@@ -111,7 +111,12 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
         return;
       }
       start.axis = 'horizontal';
-      e.currentTarget.setPointerCapture(e.pointerId);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // 캡처는 손가락이 카드 밖으로 나가도 추적하기 위한 보조 장치다.
+        // 포인터가 이미 비활성이면 NotFoundError가 나므로 무시하고 드래그는 계속한다.
+      }
     }
     if (start.axis !== 'horizontal') {
       return;
