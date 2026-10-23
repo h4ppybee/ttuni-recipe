@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 개인 로컬 메모(Claude Code가 함께 읽음, git 제외)
+CLAUDE.local.md
