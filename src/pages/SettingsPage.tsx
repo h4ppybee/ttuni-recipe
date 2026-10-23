@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Banner } from '../components/ui/Banner';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -19,6 +19,9 @@ function isStandalone(): boolean {
 }
 
 function formatBytes(bytes: number): string {
+  if (bytes === 0) {
+    return '0KB';
+  }
   if (bytes < 1024 * 1024) {
     return `${Math.max(1, Math.round(bytes / 1024))}KB`;
   }
@@ -28,15 +31,11 @@ function formatBytes(bytes: number): string {
 export function SettingsPage() {
   const toast = useToast();
   const recipeCount = useLiveQuery(() => recipeRepo.count(), []) ?? 0;
+  const dataSize = useLiveQuery(() => recipeRepo.dataSize().catch(() => undefined), []);
   const [lastBackupAt, setLast] = useState(getLastBackupAt);
   const [file, setFile] = useState<File>();
   const [building, setBuilding] = useState(false);
-  const [usage, setUsage] = useState<number>();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    navigator.storage?.estimate?.().then((e) => setUsage(e.usage)).catch(() => undefined);
-  }, [recipeCount]);
 
   const markBackedUp = () => {
     const now = Date.now();
@@ -156,7 +155,7 @@ export function SettingsPage() {
         <Card>
           <h2 className="text-title-sm text-ink">저장 공간</h2>
           <p className="mt-1 text-body-md text-body-soft">
-            레시피 {recipeCount}개{usage !== undefined ? ` · ${formatBytes(usage)} 사용 중` : ''}
+            레시피 {recipeCount}개{dataSize !== undefined ? ` · ${formatBytes(dataSize)}` : ''}
           </p>
         </Card>
       </div>

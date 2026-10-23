@@ -140,4 +140,21 @@ describe('recipeRepo', () => {
       expect(openKeyCursor).not.toHaveBeenCalled();
     });
   });
+
+  describe('dataSize', () => {
+    it('레시피가 없으면 0', async () => {
+      expect(await repo.dataSize()).toBe(0);
+    });
+
+    it('레시피 내용(UTF-8 바이트)과 사진 Blob 크기를 더한다', async () => {
+      const id = await repo.save({
+        draft: draft(),
+        photo: { kind: 'replace', full: new Blob(['x'.repeat(1000)]), thumb: new Blob(['y'.repeat(100)]) },
+      });
+      const recipe = await repo.get(id);
+      const recipeBytes = new TextEncoder().encode(JSON.stringify(recipe)).length;
+      expect(await repo.dataSize()).toBe(recipeBytes + 1100);
+    });
+  });
 });
+

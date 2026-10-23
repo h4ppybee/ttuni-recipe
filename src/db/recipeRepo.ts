@@ -81,6 +81,16 @@ export function createRecipeRepo(db: TtuniDB) {
       return db.recipes.count();
     },
 
+    // 설정 화면에 보여줄 레시피 데이터 용량. 앱 파일·폰트 캐시는 빼고
+    // 레시피 내용(JSON UTF-8 바이트)과 사진 Blob 크기만 더한다.
+    async dataSize(): Promise<number> {
+      const [recipes, photos] = await Promise.all([db.recipes.toArray(), db.photos.toArray()]);
+      const encoder = new TextEncoder();
+      const recipeBytes = recipes.reduce((sum, recipe) => sum + encoder.encode(JSON.stringify(recipe)).length, 0);
+      const photoBytes = photos.reduce((sum, photo) => sum + photo.full.size + photo.thumb.size, 0);
+      return recipeBytes + photoBytes;
+    },
+
     // iOS Safari에서 인덱스 커서가 'UnknownError: Unable to open cursor'로 실패한 적이 있어
     // 커서(uniqueKeys, anyOf) 대신 getAll(toArray)로 읽고 메모리에서 계산한다. 개인용 규모라 충분하다.
     async listIngredientNames(): Promise<string[]> {
