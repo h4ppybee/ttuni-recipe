@@ -208,6 +208,16 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - `Card` 안에 가로 배치: 썸네일 64×64(`rounded-control`, `object-cover`) + 이름(`title-sm`, 한 줄 말줄임) + 재료명 요약(`caption`, `muted`, 한 줄 말줄임, ` · `로 구분).
 - 사진이 없으면 썸네일 자리에 `primary-surface` 배경과 토마토 아이콘(작게)을 둔다.
 
+### 스와이프 동작 (`SwipeRow`)
+- 목록의 레시피 카드를 왼쪽으로 밀면 카드 오른쪽에 동작 버튼이 드러난다. 지금은 "삭제" 하나만 두고, 동작 목록은 배열로 받아 나중에 "즐겨찾기" 같은 버튼을 같은 자리에 추가할 수 있게 한다.
+- 버튼은 하나당 80px. 손을 뗄 때 버튼 너비의 절반을 넘게 밀었으면 열린 채로 멈추고, 아니면 닫힌다. 판정 로직(`isHorizontalSwipe`, `clampOffset`, `resolveSwipe`)은 `lib/swipe.ts`의 순수 함수로 분리해 단위 테스트한다.
+- 가로 이동이 세로보다 크고 8px를 넘을 때만 스와이프로 본다. 세로 스크롤은 막지 않는다(`touch-action: pan-y`).
+- 한 번에 한 카드만 열린다. 다른 카드를 밀거나, 열린 카드를 탭하거나, 목록을 스크롤하면 닫힌다. 열린 카드를 탭하면 상세로 가지 않고 닫기만 한다.
+- 동작 톤은 두 가지다: `danger`(`bg-primary` / `text-on-primary`)와 `neutral`(`bg-surface-strong` / `text-body`). 삭제 버튼은 `danger`를 쓴다 — 스와이프 동작은 iOS 관례대로 빨간(브랜드색) 배경을 쓰는 것이 "삭제는 weak 버튼" 원칙의 유일한 예외다. 버튼 안에는 아이콘(`lucide-react`, 22px, stroke width 2)을 위에, 라벨(`caption-strong`)을 아래에 둔다.
+- 닫혀 있을 때 동작 버튼은 `tabIndex={-1}`, `aria-hidden`으로 숨긴다. 키보드·스크린리더 사용자는 상세 화면의 삭제 버튼을 쓴다.
+- 동작 영역은 카드와 같은 모서리로 깎이도록 오른쪽만 `rounded-r-card overflow-hidden`으로 감싼다. 바깥 감싸개 전체를 `overflow-hidden`으로 자르면 `Card`의 `shadow-card`가 잘리므로, 바깥 감싸개는 클리핑하지 않고 동작 레이어만 클리핑해 카드 그림자를 그대로 보여준다.
+- `prefers-reduced-motion`이면 전환 없이 즉시 이동한다. 드래그 중이 아닐 때만 `transform` 200ms `ease-out`을 건다.
+
 ### 오저뭐 결과 카드 (`PickResultCard`)
 - `Card` 안에 대표 사진(4:3, `rounded-control`), 이름(`title-md`), 재료명 칩 줄. 내가 고른 재료는 선택 칩, 나머지는 기본 칩.
 - 아래에 `secondary` "다시 뽑기"와 `primary` "레시피 보기"를 가로로 둔다.
@@ -244,7 +254,7 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - 상세 재료용 큰 칩(`IngredientChip`)은 `Chip`과 다른 전용 컴포넌트다: `rounded-pill`, `bg-surface-strong`, 여백 가로 14px · 세로 8px(`py-2`). 재료명은 `body-strong` `ink`, 양은 이어서 `body-md` `body-soft`로 적되 양이 없으면 생략한다. 선택 상태는 없다.
 
 ### 재료 입력 (`IngredientInput`)
-- `TextArea` 하나(최소 4줄). 재료는 한 줄에 하나씩 적는다. placeholder: `한 줄에 하나씩 적어 주세요` / `대파 1대` / `양파 1개` / `간장 200ml`(줄바꿈으로 구분).
+- `TextArea` 하나(최소 4줄). 재료는 한 줄에 하나씩 적는다. placeholder: `Enter로 줄을 바꿔 한 줄에 하나씩 적어 주세요` / `대파 1대` / `[양념장]` / `간장 3큰술`(줄바꿈으로 구분, 대괄호 줄은 재료 대분류 제목 예시).
 - 바로 위에 자동완성 제안 칩 줄(가로 스크롤). 제안이 없으면 줄을 숨긴다.
 - 바로 아래 파싱 미리보기: `재료명`(`body-strong`, `ink`) + `양`(`body-md`, `muted`) 한 줄씩, 줄 사이 `hairline`. 양이 없으면 양 칸을 비운다.
 
