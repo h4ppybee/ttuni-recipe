@@ -45,7 +45,7 @@ function toRecipe(v: unknown): Recipe | undefined {
   if (!isObj(v)) {
     return undefined;
   }
-  const { id, name, ingredients, steps, memo, photoId, createdAt, updatedAt } = v;
+  const { id, name, ingredients, steps, memo, photoId, favorite, createdAt, updatedAt } = v;
   if (!isStr(id) || id === '' || !isStr(name) || !isStr(memo) || !isNum(createdAt) || !isNum(updatedAt)) {
     return undefined;
   }
@@ -58,6 +58,9 @@ function toRecipe(v: unknown): Recipe | undefined {
   if (photoId !== undefined && !isStr(photoId)) {
     return undefined;
   }
+  if (favorite !== undefined && favorite !== true) {
+    return undefined;
+  }
   const normalized = normalizeIngredients(ingredients);
   return {
     id,
@@ -67,6 +70,8 @@ function toRecipe(v: unknown): Recipe | undefined {
     steps,
     memo,
     photoId,
+    // 필드를 골라 새로 만들기 때문에 여기서 빠뜨리면 불러오기에서 즐겨찾기가 풀린다.
+    ...(favorite === true ? { favorite: true as const } : {}),
     createdAt,
     updatedAt,
   };

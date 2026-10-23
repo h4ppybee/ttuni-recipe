@@ -156,5 +156,40 @@ describe('recipeRepo', () => {
       expect(await repo.dataSize()).toBe(recipeBytes + 1100);
     });
   });
+
+  describe('즐겨찾기', () => {
+    it('setFavorite로 켜고 끄며, 끄면 필드를 지우고 updatedAt은 그대로 둔다', async () => {
+      const id = await repo.save({ draft: draft(), photo: { kind: 'keep' } });
+      const before = await repo.get(id);
+      await repo.setFavorite(id, true);
+      const on = await repo.get(id);
+      expect(on?.favorite).toBe(true);
+      expect(on?.updatedAt).toBe(before?.updatedAt);
+      await repo.setFavorite(id, false);
+      const off = await repo.get(id);
+      expect(off && 'favorite' in off).toBe(false);
+      expect(off?.updatedAt).toBe(before?.updatedAt);
+    });
+
+    it('없는 id면 아무것도 하지 않는다', async () => {
+      await repo.setFavorite('missing', true);
+      expect(await db.recipes.count()).toBe(0);
+    });
+
+    it('즐겨찾기 레시피를 수정 저장해도 즐겨찾기가 유지된다', async () => {
+      const id = await repo.save({ draft: draft(), photo: { kind: 'keep' } });
+      await repo.setFavorite(id, true);
+      await repo.save({ id, draft: draft({ name: '바뀐 이름' }), photo: { kind: 'keep' } });
+      const saved = await repo.get(id);
+      expect(saved?.name).toBe('바뀐 이름');
+      expect(saved?.favorite).toBe(true);
+    });
+
+    it('새 레시피는 즐겨찾기 필드가 없다', async () => {
+      const id = await repo.save({ draft: draft(), photo: { kind: 'keep' } });
+      const saved = await repo.get(id);
+      expect(saved && 'favorite' in saved).toBe(false);
+    });
+  });
 });
 

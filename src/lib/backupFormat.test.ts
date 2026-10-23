@@ -83,6 +83,24 @@ describe('validateBackup', () => {
     expect(validateBackup(file({ recipes: [recipe] }))).toEqual({ ok: false, reason: 'corrupted' });
   });
 
+  it('즐겨찾기(favorite: true)는 통과하고 결과에도 남는다, 없으면 키가 없다', () => {
+    const fav = makeRecipe({ id: 'r1', favorite: true });
+    const plain = makeRecipe({ id: 'r2' });
+    const result = validateBackup(file({ recipes: [fav, plain], photos: [] }));
+    if (!result.ok) {
+      throw new Error('통과해야 해요');
+    }
+    expect(result.data.recipes[0].favorite).toBe(true);
+    expect('favorite' in result.data.recipes[1]).toBe(false);
+  });
+
+  it('favorite이 true가 아닌 값이면 corrupted', () => {
+    for (const favorite of [false, 'yes', 1]) {
+      const recipe = { ...makeRecipe({ id: 'r1' }), favorite };
+      expect(validateBackup(file({ recipes: [recipe], photos: [] }))).toEqual({ ok: false, reason: 'corrupted' });
+    }
+  });
+
   it('재료를 다시 정리하고 ingredientNames는 파일 값을 버리고 다시 계산한다', () => {
     const recipe = {
       ...makeRecipe({ id: 'r1' }),

@@ -10,7 +10,8 @@
 - **검색**: 레시피 이름·재료명으로 검색(양·단계·메모·분류 이름은 검색 대상이 아님)
 - **메뉴추천(오저뭐?)**: 가진 재료를 고르면 그 재료가 하나라도 들어간 레시피 중 하나를 랜덤으로 추천. 맨 위에서 당기면 선택 초기화
 - **백업**: 레시피와 사진을 JSON 파일 하나로 내보내고, 불러올 때 덮어쓰지 않고 병합
-- **목록 스와이프**: 카드를 왼쪽으로 밀면 오른쪽에서 동그라미 삭제 버튼이 들어옴(동작 배열 구조라 즐겨찾기 등 추가 가능)
+- **목록 스와이프**: 카드를 왼쪽으로 밀면 오른쪽에서 동그라미 버튼(즐겨찾기 별, 삭제)이 들어옴(동작 배열 구조)
+- **즐겨찾기**: 스와이프 별이나 상세 상단 바 별로 켜고 끔. 목록 위쪽 "즐겨찾기" 묶음 + 아래 "전체" 묶음(검색 중에도 같은 규칙)
 
 ## 기술 스택과 명령
 
@@ -40,11 +41,11 @@ pnpm preview    # 빌드 결과 미리보기
 ```
 src/
   main.tsx, app/router.tsx         진입점, hash 라우터(errorElement = RouteError)
-  types.ts                         Ingredient{name, amount, group?}, Recipe, Photo, RecipeDraft
+  types.ts                         Ingredient{name, amount, group?}, Recipe{…, favorite?: true}, Photo, RecipeDraft
   styles/theme.css                 Tailwind v4 토큰(색·radius·shadow·text). 기본 스케일은 지움
   db/
     schema.ts                      Dexie: recipes 'id, *ingredientNames, updatedAt', photos 'id'
-    recipeRepo.ts                  저장(사진 keep/remove/replace 한 트랜잭션), 삭제, 조회, 재료명 목록, 후보, dataSize
+    recipeRepo.ts                  저장(사진 keep/remove/replace 한 트랜잭션, 즐겨찾기 유지), setFavorite, 삭제, 조회, 재료명 목록, 후보, dataSize
     backup.ts                      JSON 백업 만들기·병합 불러오기, backupService(기본 db 래퍼)
   lib/                             순수 함수(대부분 단위 테스트 있음)
     parseIngredients.ts            재료 텍스트 ↔ 배열. 줄바꿈 구분, [분류] 제목 줄, groupIngredients
@@ -53,10 +54,11 @@ src/
     search.ts, pickRandom.ts, linkify.ts, validateDraft.ts
     backupFormat.ts                백업 형식 검사(validateBackup), 병합 계획(planMerge)
     swipe.ts, pull.ts              스와이프·당겨서 초기화 판정
+    favorites.ts                   목록을 즐겨찾기/나머지로 나누기(splitFavorites)
     reorder.ts                     단계 드래그 순서 변경(놓일 자리, 비킬 거리, 범위 제한, 가장자리 자동 스크롤 속도)
     image.ts, deliverFile.ts, prefs.ts, history.ts, dataUrl.ts, date.ts, errors.ts, cx.ts
     steps.ts                       단계 키, 다음 단계 삽입, Cmd/Ctrl+Enter 판정
-  hooks/                           useDebouncedValue, usePhotoUrl/useBlobUrl, usePullToReset, usePrefersReducedMotion
+  hooks/                           useToggleFavorite(토글+토스트), useDebouncedValue, usePhotoUrl/useBlobUrl, usePullToReset, usePrefersReducedMotion
   components/
     ui/                            Card, Button, IconButton, Chip, TextField, TextArea, Dialog, Toast(+toastContext), EmptyState, Banner, TopBar, Fab
     AppShell, TabBar, RecipeCard, RecipeThumb, IngredientInput, IngredientChip, IngredientGroups, StepEditor, PhotoPicker, PickResultCard, LinkifiedText, SwipeRow, RouteError
@@ -75,6 +77,7 @@ scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pi
 - `ingredientNames`는 저장할 때 `ingredients`에서 계산하는 검색·추천용 필드다. 백업을 불러올 때도 파일 값을 믿지 않고 다시 계산한다.
 - 백업 형식: `{ app: 'ttuni-recipe', version: 1, exportedAt, recipes, photos[{id, full, thumb(data URL)}] }`. 병합 규칙은 `updatedAt`이 더 최근이면 갱신, 같거나 오래되면 그대로.
 - 사진은 긴 변 1280px(full)·320px(thumb) JPEG로 줄여 `photos` 테이블에 따로 둔다.
+- 즐겨찾기는 `favorite: true`, 아니면 필드를 두지 않는다. 켜고 꺼도 `updatedAt`은 바꾸지 않는다(목록이 최근 수정순이라 카드가 튀지 않게). 그래서 백업 병합에서 즐겨찾기만 바꾼 변경은 "더 최근"으로 치지 않는다. 백업 `toRecipe`는 필드를 골라 새로 만들므로 `favorite`을 꼭 옮겨 담는다.
 
 ## 반드시 지킬 것
 
@@ -112,10 +115,11 @@ scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pi
 | 2026-10-23 | 설정의 저장 공간은 레시피 데이터(내용+사진)만 표시 | 브라우저 전체 사용량은 앱 파일·폰트 캐시가 대부분이라 혼동 |
 | 2026-10-23 | 작성 화면 재료 미리보기도 상세와 같은 칩(`IngredientGroups` 공유) | 사용자 요청. 입력은 텍스트 칸 유지 |
 | 2026-10-23 | 단계 칸 Enter는 줄바꿈, Cmd/Ctrl+Enter는 다음 단계 추가·포커스 | 사용자 요청. iPhone 키보드엔 Cmd가 없어 Enter를 줄바꿈으로 둠 |
+| 2026-10-23 | 즐겨찾기: `favorite?: true`, 목록 위 묶음, 스와이프·상세 별로 토글, `updatedAt` 유지 | 사용자 요청(묶음 방식·토글 위치 선택) |
 | 2026-10-23 | 단계 편집 버튼을 손잡이+X로 줄이고 손잡이 드래그로 순서 변경(라이브러리 없이 직접 구현) | 사용자 요청. 스와이프와 같은 ref+rAF 방식으로 맞춤, 키보드는 손잡이에서 ↑/↓. 화면 가장자리에서 자동 스크롤(하단 바는 `data-bottom-bar`로 찾음) |
 
 ## 다음에 할 수 있는 일
 
 - 2차: 캡처·글 붙여넣기를 LLM이 이 앱 형식(분류 제목 줄 포함)으로 정리 → 편집 화면에 미리 채움(API 키는 Cloudflare Worker 등 서버 쪽에만)
-- 즐겨찾기(스와이프 동작 추가), Face ID 잠금(WebAuthn) 검토
+- Face ID 잠금(WebAuthn) 검토
 - 사진 없는 썸네일의 토마토 아이콘에 흰 배경이 보이는 문제(투명 아이콘 별도 생성)

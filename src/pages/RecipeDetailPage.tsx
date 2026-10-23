@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Pencil } from 'lucide-react';
+import { Pencil, Star } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { IngredientGroups } from '../components/IngredientGroups';
@@ -13,11 +13,14 @@ import { useToast } from '../components/ui/toastContext';
 import { TopBar } from '../components/ui/TopBar';
 import { recipeRepo } from '../db/recipeRepo';
 import { usePhotoUrl } from '../hooks/usePhotoUrl';
+import { useToggleFavorite } from '../hooks/useToggleFavorite';
+import { cx } from '../lib/cx';
 
 export function RecipeDetailPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const toggleFavorite = useToggleFavorite();
   const recipe = useLiveQuery(async () => (await recipeRepo.get(id)) ?? null, [id]);
   const photoUrl = usePhotoUrl(recipe?.photoId, 'full');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -51,9 +54,23 @@ export function RecipeDetailPage() {
       <TopBar
         back
         right={
-          <IconButton label="레시피 수정하기" onClick={() => navigate(`/recipes/${recipe.id}/edit`)}>
-            <Pencil size={22} strokeWidth={2} />
-          </IconButton>
+          <>
+            <IconButton
+              label="즐겨찾기"
+              aria-pressed={!!recipe.favorite}
+              onClick={() => toggleFavorite(recipe)}
+            >
+              <Star
+                size={22}
+                strokeWidth={2}
+                fill={recipe.favorite ? 'currentColor' : 'none'}
+                className={cx(recipe.favorite && 'text-primary')}
+              />
+            </IconButton>
+            <IconButton label="레시피 수정하기" onClick={() => navigate(`/recipes/${recipe.id}/edit`)}>
+              <Pencil size={22} strokeWidth={2} />
+            </IconButton>
+          </>
         }
       />
       <div className="flex flex-col gap-6 px-4 pb-10">

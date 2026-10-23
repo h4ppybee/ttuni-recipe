@@ -39,6 +39,18 @@ describe('backup', () => {
     expect(photo.full.type).toBe('image/jpeg');
   });
 
+  it('즐겨찾기는 내보냈다가 빈 DB로 불러와도 유지된다', async () => {
+    const id = await repo.save({ draft: draft('계란국'), photo: { kind: 'keep' } });
+    await repo.save({ draft: draft('계란말이'), photo: { kind: 'keep' } });
+    await repo.setFavorite(id, true);
+    const { blob } = await buildBackupBlob(db);
+
+    const target = new TtuniDB(`test-${crypto.randomUUID()}`);
+    await importBackup(target, await blob.text());
+    const restored = await target.recipes.toArray();
+    expect(restored.filter((r) => r.favorite).map((r) => r.id)).toEqual([id]);
+  });
+
   it('JSON이 아니면 corrupted, 다른 앱 파일이면 not-backup', async () => {
     expect(await importBackup(db, '{oops')).toEqual({ ok: false, reason: 'corrupted' });
     expect(await importBackup(db, '{"a":1}')).toEqual({ ok: false, reason: 'not-backup' });

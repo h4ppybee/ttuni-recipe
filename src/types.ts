@@ -12,6 +12,8 @@ export interface Recipe {
   steps: string[];
   memo: string;
   photoId?: string;
+  // 즐겨찾기면 true, 아니면 필드를 두지 않는다(예전 레코드·백업 호환). 켜고 꺼도 updatedAt은 그대로.
+  favorite?: true;
   createdAt: number;
   updatedAt: number;
 }

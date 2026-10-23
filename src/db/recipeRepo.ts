@@ -45,6 +45,7 @@ export function createRecipeRepo(db: TtuniDB) {
           steps: draft.steps.map((s) => s.trim()).filter((s) => s !== ''),
           memo: draft.memo.trim(),
           photoId,
+          ...(existing?.favorite ? { favorite: true as const } : {}),
           createdAt: existing?.createdAt ?? now,
           updatedAt: now,
         });
@@ -62,6 +63,18 @@ export function createRecipeRepo(db: TtuniDB) {
           await db.photos.delete(recipe.photoId);
         }
         await db.recipes.delete(id);
+      });
+    },
+
+    // 즐겨찾기는 목록 순서(최근 수정순)를 흔들지 않도록 updatedAt을 바꾸지 않는다.
+    async setFavorite(id: string, on: boolean): Promise<void> {
+      await db.transaction('rw', db.recipes, async () => {
+        const recipe = await db.recipes.get(id);
+        if (!recipe) {
+          return;
+        }
+        const { favorite: _favorite, ...rest } = recipe;
+        await db.recipes.put(on ? { ...rest, favorite: true } : rest);
       });
     },
 
