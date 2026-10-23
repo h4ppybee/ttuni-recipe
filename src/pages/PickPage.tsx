@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { RotateCw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { PickResultCard } from '../components/PickResultCard';
@@ -8,6 +9,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { TextField } from '../components/ui/TextField';
 import { useToast } from '../components/ui/toastContext';
 import { TopBar } from '../components/ui/TopBar';
+import { usePullToReset } from '../hooks/usePullToReset';
 import { recipeRepo } from '../db/recipeRepo';
 import { pickRandom } from '../lib/pickRandom';
 import { getPickSelection, setPickSelection } from '../lib/prefs';
@@ -30,6 +32,15 @@ export function PickPage() {
   useEffect(() => {
     setPickSelection(effective);
   }, [effective]);
+
+  // 화면 맨 위에서 아래로 당겼다 놓으면 고른 재료와 결과를 초기화한다(선택 해제 버튼 대신).
+  const canReset = effective.length > 0 || state.kind !== 'idle' || filter !== '';
+  const { indicatorRef: pullIndicatorRef, iconRef: pullIconRef } = usePullToReset(() => {
+    setSelected([]);
+    setFilter('');
+    setState({ kind: 'idle' });
+    toast('선택을 초기화했어요.');
+  }, canReset);
 
   const visibleNames = useMemo(() => {
     const q = filter.trim();
@@ -69,6 +80,16 @@ export function PickPage() {
   return (
     <>
       <TopBar title="오저뭐?" />
+      <div
+        ref={pullIndicatorRef}
+        aria-hidden
+        className="flex items-center justify-center overflow-hidden text-muted"
+        style={{ height: 0, opacity: 0 }}
+      >
+        <span ref={pullIconRef} className="inline-flex">
+          <RotateCw size={22} strokeWidth={2} />
+        </span>
+      </div>
       <div className="flex flex-col gap-4 px-4">
         <p className="text-body-md text-body-soft">가지고 있는 재료를 골라 주세요.</p>
         <TextField value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="재료 찾기" aria-label="재료 찾기" />
@@ -77,18 +98,6 @@ export function PickPage() {
             <Chip key={name} label={name} selected={effective.includes(name)} onClick={() => toggle(name)} />
           ))}
         </div>
-        {effective.length > 0 && (
-          <Button
-            variant="text"
-            className="self-start px-0"
-            onClick={() => {
-              setSelected([]);
-              setState({ kind: 'idle' });
-            }}
-          >
-            선택 해제
-          </Button>
-        )}
         <Button block disabled={effective.length === 0} onClick={() => draw()}>
           메뉴 추천 뽑기
         </Button>

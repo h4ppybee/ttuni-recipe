@@ -220,6 +220,10 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - `prefers-reduced-motion`이면 전환 없이 즉시 이동한다. 드래그 중이 아닐 때만 `transform` 200ms `ease-out`을 건다.
 - 드래그 중에는 React 상태를 바꾸지 않는다. 위치는 ref로 `translate3d`를 DOM에 직접 쓰고(`requestAnimationFrame`으로 프레임당 한 번), 움직이는 동안에만 `will-change`로 합성 레이어에 올렸다가 멈추면 해제한다. 손을 뗄 때만 `onOpenChange`로 열림·닫힘을 알린다.
 
+### 당겨서 초기화 (메뉴추천 화면)
+- 메뉴추천 화면에는 [선택 해제] 버튼을 두지 않는다. 화면 맨 위에서 아래로 당기면 제목 아래에 리프레시 아이콘(`RotateCw`, 22px, `muted`)이 나타나고, 당긴 거리만큼 돌다가 기준 거리(72px, 손가락 이동의 절반만 반영)에서 한 바퀴를 채우며 `primary` 색으로 바뀐다. 그 상태에서 손을 떼면 고른 재료·검색어·결과를 초기화하고 "선택을 초기화했어요." 토스트를 띄운다.
+- 당기는 동안에는 React 상태를 바꾸지 않고 ref로 높이·회전을 직접 그린다(`usePullToReset`). 초기화할 것이 없으면 제스처를 붙이지 않는다.
+
 ### 오저뭐 결과 카드 (`PickResultCard`)
 - `Card` 안에 대표 사진(4:3, `rounded-control`), 이름(`title-md`), 재료명 칩 줄. 내가 고른 재료는 선택 칩, 나머지는 기본 칩.
 - 아래에 `secondary` "다시 뽑기"와 `primary` "레시피 보기"를 가로로 둔다.
