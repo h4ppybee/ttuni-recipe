@@ -66,7 +66,7 @@ export function RecipeDetailPage() {
           <Card>
             <div className="flex flex-col gap-4">
               {groupIngredients(recipe.ingredients).map(({ group, items }) => (
-                <div key={group || '분류 없음'}>
+                <div key={group || '__none__'}>
                   {group && <h3 className="mb-2 text-body-strong text-body-soft">{group}</h3>}
                   <div className="flex flex-wrap gap-2">
                     {items.map((item, index) => (

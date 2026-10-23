@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { cx } from '../lib/cx';
 import { clampOffset, isHorizontalSwipe, resolveSwipe, type SwipeAction } from '../lib/swipe';
@@ -36,16 +36,40 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
   const actionsWidth = actions.length * ACTION_WIDTH;
   const restingOffset = open ? -actionsWidth : 0;
   const [dragOffset, setDragOffset] = useState<number | null>(null);
+  // 드래그 종료 직후 ~ CSS transition이 끝나기 전까지 true. 이 동안은 행이 완전히
+  // 닫힌 상태(offset 0)라도 동작 레이어를 숨기지 않는다(닫히는 애니메이션 중에는 보여야 함).
+  const [transitioning, setTransitioning] = useState(false);
   const dragStartRef = useRef<DragStart | null>(null);
   const suppressNextClickRef = useRef(false);
+  const prevOffsetRef = useRef(restingOffset);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const offset = dragOffset ?? restingOffset;
   const isDragging = dragOffset !== null;
+  // 완전히 닫혀 있고(offset 0) 드래그 중도 아니고 전환 중도 아닐 때만 동작 레이어를 숨긴다.
+  // Card의 active:scale-[0.98]이나 모서리 안티앨리어싱으로 빨간 배경이 비치는 것을 막는다.
+  const actionsHidden = offset === 0 && !isDragging && !transitioning;
+
+  // 드래그 중이 아닐 때 보이는 offset이 실제로 바뀌면(스크롤로 닫힘, 다른 카드를 탭해 닫힘,
+  // 드래그를 놓아 스냅되는 경우 등) CSS transition이 걸린다. 그 동안은 동작 레이어를 보여준다.
+  // (드래그를 놓았는데 이미 목표 offset에 와 있어 실제로는 안 움직이는 경우는 여기서 걸러진다 —
+  // 그런 경우 transitionend가 영영 안 와서 계속 보이는 상태로 고정되는 걸 막기 위함.)
+  useEffect(() => {
+    if (!isDragging && !prefersReducedMotion && prevOffsetRef.current !== offset) {
+      setTransitioning(true);
+    }
+    prevOffsetRef.current = offset;
+  }, [offset, isDragging, prefersReducedMotion]);
 
   const endDrag = (resolved?: 'open' | 'closed') => {
     if (dragStartRef.current?.axis === 'horizontal') {
       suppressNextClickRef.current = true;
+      // 모바일에서는 드래그로 움직인 터치가 click을 아예 안 쏘는 경우가 대부분이라,
+      // 이 플래그가 계속 true로 남아 다음 "진짜" 탭을 삼켜버릴 수 있다. click이 오지
+      // 않아도 다음 틱에 스스로 풀어 둔다.
+      setTimeout(() => {
+        suppressNextClickRef.current = false;
+      }, 0);
     }
     dragStartRef.current = null;
     setDragOffset(null);
@@ -58,6 +82,9 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
     if (e.pointerType === 'mouse' && e.button !== 0) {
       return;
     }
+    // 새 제스처가 시작되면 이전 드래그가 남긴 클릭 억제 플래그를 무조건 리셋한다.
+    // (예: 스와이프로 열고 → 탭으로 닫힌 뒤 → 바로 다음 탭을 또 눌렀을 때 오동작 방지)
+    suppressNextClickRef.current = false;
     dragStartRef.current = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, axis: null, wasOpen: open };
     setDragOffset(restingOffset);
   };
@@ -65,6 +92,12 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const start = dragStartRef.current;
     if (!start || start.pointerId !== e.pointerId) {
+      return;
+    }
+    if (e.pointerType === 'mouse' && e.buttons === 0) {
+      // 데스크톱에서 pointerup을 놓친(창 밖에서 버튼을 뗀 등) 상태로 남은 드래그.
+      // 버튼이 눌려 있지 않은데 move가 오면 드래그를 끝낸다.
+      endDrag(start.wasOpen ? 'open' : 'closed');
       return;
     }
     const dx = e.clientX - start.x;
@@ -125,7 +158,10 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
   return (
     <div className="relative">
       {actionsWidth > 0 && (
-        <div className="absolute inset-y-0 right-0 flex overflow-hidden rounded-r-card" style={{ width: actionsWidth }}>
+        <div
+          className={cx('absolute inset-y-0 right-0 flex overflow-hidden rounded-r-card', actionsHidden && 'invisible')}
+          style={{ width: actionsWidth }}
+        >
           {actions.map((action) => (
             <button
               key={action.key}
@@ -155,6 +191,12 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         onClickCapture={handleContentClickCapture}
+        onTransitionEnd={(e) => {
+          if (e.propertyName !== 'transform' || e.target !== e.currentTarget) {
+            return;
+          }
+          setTransitioning(false);
+        }}
       >
         {children}
       </div>

@@ -118,6 +118,20 @@ describe('isGroupHeaderLine', () => {
     expect(isGroupHeaderLine('[양념장')).toBe(false);
     expect(isGroupHeaderLine('양념장]')).toBe(false);
   });
+
+  it('대괄호가 줄 전체를 감싸지 않으면(재료 이름/양에 포함된 대괄호) 제목 줄이 아니다', () => {
+    // '[국산] 대파 [1단]'처럼 대괄호가 두 번 나오면 줄 전체가 하나의 분류 이름이 아니라
+    // 재료 이름이나 양에 대괄호가 섞인 것이다. parsePiece가 숫자 기준으로 이름/양을
+    // 가르므로 결과가 다소 거칠지만(이름에 '[' 하나가 남는다), 제목 줄로 오인해
+    // 재료를 통째로 잃어버리는 것보다는 낫다.
+    expect(isGroupHeaderLine('[국산] 대파 [1단]')).toBe(false);
+    expect(parseIngredients('[국산] 대파 [1단]')).toEqual([{ name: '[국산] 대파 [', amount: '1단]' }]);
+  });
+
+  it('대괄호 분류 이름 뒤에 재료가 이어지면 제목 줄이 아니라 재료 줄이다', () => {
+    expect(isGroupHeaderLine('[유기농] 대파 1대')).toBe(false);
+    expect(parseIngredients('[유기농] 대파 1대')).toEqual([{ name: '[유기농] 대파', amount: '1대' }]);
+  });
 });
 
 describe('groupIngredients', () => {

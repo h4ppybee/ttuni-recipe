@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { pieceAt, replacePieceName, suggestIngredientNames } from '../lib/ingredientCaret';
-import { groupIngredients, isGroupHeaderLine, parseIngredients, parsePiece } from '../lib/parseIngredients';
+import { groupIngredients, parseIngredients, parsePiece } from '../lib/parseIngredients';
 import { Chip } from './ui/Chip';
 import { TextArea } from './ui/TextArea';
 
@@ -19,7 +19,7 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
   const groups = useMemo(() => groupIngredients(parsed), [parsed]);
   const currentPiece = useMemo(() => pieceAt(value, caret).piece, [value, caret]);
   const suggestions = useMemo(() => {
-    if (isGroupHeaderLine(currentPiece) || currentPiece.trimStart().startsWith('[')) {
+    if (currentPiece.trimStart().startsWith('[')) {
       return [];
     }
     return suggestIngredientNames(knownNames, parsePiece(currentPiece).name);
@@ -66,7 +66,7 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
       {groups.length > 0 && (
         <div className="mt-2 flex flex-col gap-3">
           {groups.map(({ group, items }) => (
-            <div key={group || '분류 없음'}>
+            <div key={group || '__none__'}>
               {group && <p className="mb-1 text-body-strong text-body-soft">{group}</p>}
               <ul className="divide-y divide-hairline">
                 {items.map((item, index) => (

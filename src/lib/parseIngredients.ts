@@ -3,7 +3,7 @@ import { normalizeIngredients, squashSpaces } from './normalizeIngredients';
 
 const DIGIT = /[0-9½¼¾⅓⅔]/;
 const AMOUNT_WORD = /^(약간|적당량|적당히|조금|소량|넉넉히|한\S*|반\S*)$/;
-const GROUP_HEADER = /^\s*\[(.*)\]\s*$/;
+const GROUP_HEADER = /^\s*\[([^[\]]*)\]\s*$/;
 
 // 재료는 한 줄에 하나씩 적는다. 쉼표는 구분자가 아니라 그 줄의 내용이다(예: '물 1,000ml').
 export function isSeparatorAt(text: string, index: number): boolean {

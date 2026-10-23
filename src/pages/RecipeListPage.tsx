@@ -99,7 +99,17 @@ export function RecipeListPage() {
                     },
                   ]}
                 >
-                  <RecipeCard recipe={recipe} onClick={() => navigate(`/recipes/${recipe.id}`)} />
+                  <RecipeCard
+                    recipe={recipe}
+                    onClick={() => {
+                      // 다른 카드가 열려 있을 때 이 카드를 탭하면 상세로 가지 않고 먼저 닫는다(iOS 관례).
+                      if (openId !== null && openId !== recipe.id) {
+                        setOpenId(null);
+                        return;
+                      }
+                      navigate(`/recipes/${recipe.id}`);
+                    }}
+                  />
                 </SwipeRow>
               </li>
             ))}
