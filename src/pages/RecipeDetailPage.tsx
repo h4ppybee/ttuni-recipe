@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { IngredientChip } from '../components/IngredientChip';
 import { LinkifiedText } from '../components/LinkifiedText';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -12,6 +13,7 @@ import { useToast } from '../components/ui/toastContext';
 import { TopBar } from '../components/ui/TopBar';
 import { recipeRepo } from '../db/recipeRepo';
 import { usePhotoUrl } from '../hooks/usePhotoUrl';
+import { groupIngredients } from '../lib/parseIngredients';
 
 export function RecipeDetailPage() {
   const { id = '' } = useParams();
@@ -62,14 +64,18 @@ export function RecipeDetailPage() {
         <section>
           <h2 className="mb-3 text-title-md text-ink">재료</h2>
           <Card>
-            <ul className="divide-y divide-hairline">
-              {recipe.ingredients.map((item, index) => (
-                <li key={`${item.name}-${index}`} className="flex justify-between gap-4 py-2 first:pt-0 last:pb-0">
-                  <span className="text-body-lg text-ink">{item.name}</span>
-                  <span className="text-body-md text-body-soft">{item.amount}</span>
-                </li>
+            <div className="flex flex-col gap-4">
+              {groupIngredients(recipe.ingredients).map(({ group, items }) => (
+                <div key={group || '분류 없음'}>
+                  {group && <h3 className="mb-2 text-body-strong text-body-soft">{group}</h3>}
+                  <div className="flex flex-wrap gap-2">
+                    {items.map((item, index) => (
+                      <IngredientChip key={`${item.name}-${index}`} name={item.name} amount={item.amount} />
+                    ))}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </Card>
         </section>
 

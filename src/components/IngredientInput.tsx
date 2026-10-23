@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { pieceAt, replacePieceName, suggestIngredientNames } from '../lib/ingredientCaret';
-import { parseIngredients, parsePiece } from '../lib/parseIngredients';
+import { groupIngredients, isGroupHeaderLine, parseIngredients, parsePiece } from '../lib/parseIngredients';
 import { Chip } from './ui/Chip';
 import { TextArea } from './ui/TextArea';
 
@@ -16,10 +16,14 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
   const ref = useRef<HTMLTextAreaElement>(null);
   const [caret, setCaret] = useState(0);
   const parsed = useMemo(() => parseIngredients(value), [value]);
-  const suggestions = useMemo(
-    () => suggestIngredientNames(knownNames, parsePiece(pieceAt(value, caret).piece).name),
-    [knownNames, value, caret],
-  );
+  const groups = useMemo(() => groupIngredients(parsed), [parsed]);
+  const currentPiece = useMemo(() => pieceAt(value, caret).piece, [value, caret]);
+  const suggestions = useMemo(() => {
+    if (isGroupHeaderLine(currentPiece) || currentPiece.trimStart().startsWith('[')) {
+      return [];
+    }
+    return suggestIngredientNames(knownNames, parsePiece(currentPiece).name);
+  }, [knownNames, currentPiece]);
 
   const syncCaret = () => setCaret(ref.current?.selectionStart ?? value.length);
 
@@ -49,7 +53,7 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
         label="재료"
         rows={4}
         value={value}
-        placeholder={'한 줄에 하나씩 적어 주세요\n대파 1대\n양파 1개\n간장 200ml'}
+        placeholder={'Enter로 줄을 바꿔 한 줄에 하나씩 적어 주세요\n대파 1대\n[양념장]\n간장 3큰술'}
         onChange={(e) => {
           onChange(e.target.value);
           setCaret(e.target.selectionStart);
@@ -59,15 +63,22 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
         onClick={syncCaret}
         error={error}
       />
-      {parsed.length > 0 && (
-        <ul className="mt-2 divide-y divide-hairline">
-          {parsed.map((item, index) => (
-            <li key={`${item.name}-${index}`} className="flex justify-between gap-4 py-2">
-              <span className="text-body-strong text-ink">{item.name}</span>
-              <span className="text-body-md text-muted">{item.amount}</span>
-            </li>
+      {groups.length > 0 && (
+        <div className="mt-2 flex flex-col gap-3">
+          {groups.map(({ group, items }) => (
+            <div key={group || '분류 없음'}>
+              {group && <p className="mb-1 text-body-strong text-body-soft">{group}</p>}
+              <ul className="divide-y divide-hairline">
+                {items.map((item, index) => (
+                  <li key={`${item.name}-${index}`} className="flex justify-between gap-4 py-2">
+                    <span className="text-body-strong text-ink">{item.name}</span>
+                    <span className="text-body-md text-muted">{item.amount}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

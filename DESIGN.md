@@ -240,7 +240,8 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 ### 칩 (`Chip`)
 - `rounded-pill`, 여백 6px 14px, 글자 `caption-strong`.
 - 기본: `surface-strong` / `body`. 선택: `primary-surface` / `primary-text`.
-- 칩은 오저뭐 재료 고르기, 오저뭐 결과 카드, 재료 자동완성 제안에만 쓴다. 목록 카드의 재료 요약과 상세 화면 재료 목록은 칩 없이 텍스트로 둔다.
+- 칩은 오저뭐 재료 고르기, 오저뭐 결과 카드, 재료 자동완성 제안, 상세 화면 재료에 쓴다. 목록 카드의 재료 요약은 칩 없이 텍스트로 둔다.
+- 상세 재료용 큰 칩(`IngredientChip`)은 `Chip`과 다른 전용 컴포넌트다: `rounded-pill`, `bg-surface-strong`, 여백 가로 14px · 세로 8px(`py-2`). 재료명은 `body-strong` `ink`, 양은 이어서 `body-md` `body-soft`로 적되 양이 없으면 생략한다. 선택 상태는 없다.
 
 ### 재료 입력 (`IngredientInput`)
 - `TextArea` 하나(최소 4줄). 재료는 한 줄에 하나씩 적는다. placeholder: `한 줄에 하나씩 적어 주세요` / `대파 1대` / `양파 1개` / `간장 200ml`(줄바꿈으로 구분).
@@ -248,7 +249,8 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - 바로 아래 파싱 미리보기: `재료명`(`body-strong`, `ink`) + `양`(`body-md`, `muted`) 한 줄씩, 줄 사이 `hairline`. 양이 없으면 양 칸을 비운다.
 
 ### 재료 목록 (상세 화면)
-- `Card` 안 리스트. 왼쪽 재료명(`body-lg`, `ink`), 오른쪽 양(`body-md`, `body-soft`), 줄 사이 `hairline`.
+- `Card` 안에 분류 없는 재료의 `IngredientChip`을 먼저 놓고, 이어서 분류마다 작은 제목(`body-strong`, `body-soft`)과 그 분류의 칩 줄을 둔다. 분류가 하나도 없으면 지금처럼 칩 한 줄만 보인다.
+- 칩은 가로로 나열하고 넘치면 줄바꿈한다(`flex flex-wrap gap-2`).
 
 ### 단계 목록 (`StepList`)
 - 보기: 번호 원(24px, `primary-surface` 배경, `primary-text` 숫자, `caption-strong`) + 설명(`body-lg`, `body`). 단계 사이 20px.
