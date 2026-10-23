@@ -271,7 +271,7 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 ### 단계 목록 (`StepList`)
 - 보기: 번호 원(24px, `primary-surface` 배경, `primary-text` 숫자, `caption-strong`) + 설명(`body-lg`, `body`). 단계 사이 20px.
 - 편집: 번호 + `TextArea` + 오른쪽 세로 아이콘 버튼 2개(손잡이 `GripVertical`, 지우기 `X`). 맨 아래 `secondary` 버튼 "단계 추가하기".
-- 손잡이를 끌어 순서를 바꾼다. 끄는 행은 `surface-card` 배경·`rounded-card`·`shadow-floating`으로 띄우고, 다른 행은 200ms 동안 비켜 준다. 번호 원도 놓일 자리를 따라간다. 손잡이에 포커스가 있으면 ↑/↓ 키로도 옮길 수 있다. 단계가 하나뿐이면 손잡이와 지우기를 끈다.
+- 손잡이를 끌어 순서를 바꾼다. 끄는 행은 `surface-card` 배경·`rounded-card`·`shadow-floating`으로 띄우고, 다른 행은 200ms 동안 비켜 준다. 번호 원도 놓일 자리를 따라간다. 끄는 행은 첫 단계 위·마지막 단계 아래로 나가지 않는다. 손가락이 보이는 영역(상단 바 아래 ~ 하단 저장 바 위)의 가장자리 72px 안에 있으면 그쪽으로 자동 스크롤한다(가까울수록 빠르게, 프레임당 최대 16px). 손잡이에 포커스가 있으면 ↑/↓ 키로도 옮길 수 있다. 단계가 하나뿐이면 손잡이와 지우기를 끈다.
 - 단계 칸에서 Enter는 줄바꿈이다. 하드웨어 키보드의 Cmd+Enter(Windows는 Ctrl+Enter)는 지금 단계 바로 뒤에 빈 단계를 넣고 그 칸으로 포커스를 옮긴다. 한글 조합 중에는 무시한다.
 
 ### 사진

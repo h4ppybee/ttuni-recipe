@@ -2,7 +2,7 @@ import { GripVertical, X } from 'lucide-react';
 import { useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { dropIndex, moveItem, positionAfterDrop, shiftFor, type RowBox } from '../lib/reorder';
+import { autoScrollStep, clampDy, dropIndex, moveItem, positionAfterDrop, shiftFor, type RowBox } from '../lib/reorder';
 import { insertStepAfter, isAddStepShortcut, newStep, type StepItem } from '../lib/steps';
 import { Button } from './ui/Button';
 import { FieldError, FieldLabel } from './ui/TextField';
@@ -33,10 +33,20 @@ function setNumber(row: HTMLElement, n: number) {
 interface Drag {
   pointerId: number;
   from: number;
+  // 위치는 모두 문서 좌표(화면 좌표 + 스크롤)다. 자동 스크롤 중에도 계산이 어긋나지 않게 한다.
   startY: number;
+  pointerY: number;
   dy: number;
   rows: RowBox[];
   els: HTMLElement[];
+}
+
+// 상단 바 아래부터 하단 저장 바(또는 iOS 키보드) 위까지, 실제로 보이는 세로 범위.
+function visibleBounds(): { top: number; bottom: number } {
+  const top = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
+  const viewport = window.visualViewport?.height ?? window.innerHeight;
+  const bar = document.querySelector('[data-bottom-bar]')?.getBoundingClientRect().top ?? viewport;
+  return { top, bottom: Math.min(viewport, bar) };
 }
 
 type RefMap<T> = Map<string, T>;
@@ -54,6 +64,7 @@ function bindRef<T>(map: RefObject<RefMap<T>>, key: string) {
 /**
  * 단계 목록 편집. 각 행의 손잡이를 끌어 순서를 바꾼다.
  * 끄는 동안에는 React 상태를 바꾸지 않고 ref로 transform만 쓴다(rAF로 프레임당 한 번).
+ * 손가락이 보이는 영역의 위·아래 가장자리에 가까우면 그쪽으로 자동 스크롤한다.
  * 손을 뗄 때 스타일을 지우고 같은 틱에 바뀐 순서를 onChange로 알린다.
  */
 export function StepEditor({ steps, onChange, error }: StepEditorProps) {
@@ -110,8 +121,25 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
     drag.els[drag.from].classList.remove(...LIFTED_CLASSES);
   };
 
+  // 끄는 동안 매 프레임 돈다. 손가락이 가장자리에 머물러 있으면 move 이벤트가 없어도 계속 스크롤한다.
+  const tick = () => {
+    const drag = dragRef.current;
+    if (!drag) {
+      frameRef.current = null;
+      return;
+    }
+    const { top, bottom } = visibleBounds();
+    const step = autoScrollStep(drag.pointerY, top, bottom);
+    if (step !== 0) {
+      window.scrollBy(0, step);
+    }
+    drag.dy = clampDy(drag.rows, drag.from, drag.pointerY + window.scrollY - drag.startY);
+    paint(drag);
+    frameRef.current = requestAnimationFrame(tick);
+  };
+
   const handlePointerDown = (index: number, e: ReactPointerEvent<HTMLButtonElement>) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) {
+    if (dragRef.current || (e.pointerType === 'mouse' && e.button !== 0)) {
       return;
     }
     const els = steps.map((s) => rows.current.get(s.key)).filter((el): el is HTMLLIElement => !!el);
@@ -127,11 +155,12 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
     const drag: Drag = {
       pointerId: e.pointerId,
       from: index,
-      startY: e.clientY,
+      startY: e.clientY + window.scrollY,
+      pointerY: e.clientY,
       dy: 0,
       rows: els.map((el) => {
         const rect = el.getBoundingClientRect();
-        return { top: rect.top, height: rect.height };
+        return { top: rect.top + window.scrollY, height: rect.height };
       }),
       els,
     };
@@ -140,6 +169,7 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
     });
     els[index].classList.add(...LIFTED_CLASSES);
     dragRef.current = drag;
+    frameRef.current = requestAnimationFrame(tick);
   };
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
@@ -148,18 +178,8 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
       return;
     }
     e.preventDefault();
-    drag.dy = e.clientY - drag.startY;
-    if (frameRef.current !== null) {
-      return;
-    }
-    frameRef.current = requestAnimationFrame(() => {
-      frameRef.current = null;
-      const current = dragRef.current;
-      if (!current) {
-        return;
-      }
-      paint(current);
-    });
+    // 실제 그리기와 스크롤은 tick이 다음 프레임에 한다.
+    drag.pointerY = e.clientY;
   };
 
   const handlePointerUp = (e: ReactPointerEvent<HTMLButtonElement>) => {
@@ -168,6 +188,7 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
       return;
     }
     dragRef.current = null;
+    drag.dy = clampDy(drag.rows, drag.from, e.clientY + window.scrollY - drag.startY);
     const to = dropIndex(drag.rows, drag.from, drag.dy);
     clearStyles(drag);
     if (to === drag.from) {

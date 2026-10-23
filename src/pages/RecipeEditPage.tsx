@@ -174,6 +174,7 @@ function RecipeForm({ initial }: { initial?: Recipe }) {
         <TextArea label="메모" rows={3} value={memo} onChange={(e) => onMemoChange(e.target.value)} placeholder="출처 링크나 팁을 적어 두세요" />
       </div>
       <div
+        data-bottom-bar
         className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[480px] bg-canvas px-4 pt-3"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
       >

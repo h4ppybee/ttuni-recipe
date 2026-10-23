@@ -53,7 +53,7 @@ src/
     search.ts, pickRandom.ts, linkify.ts, validateDraft.ts
     backupFormat.ts                백업 형식 검사(validateBackup), 병합 계획(planMerge)
     swipe.ts, pull.ts              스와이프·당겨서 초기화 판정
-    reorder.ts                     단계 드래그 순서 변경(놓일 자리, 비킬 거리, 배열 이동)
+    reorder.ts                     단계 드래그 순서 변경(놓일 자리, 비킬 거리, 범위 제한, 가장자리 자동 스크롤 속도)
     image.ts, deliverFile.ts, prefs.ts, history.ts, dataUrl.ts, date.ts, errors.ts, cx.ts
     steps.ts                       단계 키, 다음 단계 삽입, Cmd/Ctrl+Enter 판정
   hooks/                           useDebouncedValue, usePhotoUrl/useBlobUrl, usePullToReset, usePrefersReducedMotion
@@ -112,7 +112,7 @@ scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pi
 | 2026-10-23 | 설정의 저장 공간은 레시피 데이터(내용+사진)만 표시 | 브라우저 전체 사용량은 앱 파일·폰트 캐시가 대부분이라 혼동 |
 | 2026-10-23 | 작성 화면 재료 미리보기도 상세와 같은 칩(`IngredientGroups` 공유) | 사용자 요청. 입력은 텍스트 칸 유지 |
 | 2026-10-23 | 단계 칸 Enter는 줄바꿈, Cmd/Ctrl+Enter는 다음 단계 추가·포커스 | 사용자 요청. iPhone 키보드엔 Cmd가 없어 Enter를 줄바꿈으로 둠 |
-| 2026-10-23 | 단계 편집 버튼을 손잡이+X로 줄이고 손잡이 드래그로 순서 변경(라이브러리 없이 직접 구현) | 사용자 요청. 스와이프와 같은 ref+rAF 방식으로 맞춤, 키보드는 손잡이에서 ↑/↓ |
+| 2026-10-23 | 단계 편집 버튼을 손잡이+X로 줄이고 손잡이 드래그로 순서 변경(라이브러리 없이 직접 구현) | 사용자 요청. 스와이프와 같은 ref+rAF 방식으로 맞춤, 키보드는 손잡이에서 ↑/↓. 화면 가장자리에서 자동 스크롤(하단 바는 `data-bottom-bar`로 찾음) |
 
 ## 다음에 할 수 있는 일
 

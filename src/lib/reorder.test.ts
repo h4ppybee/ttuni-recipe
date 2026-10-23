@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropIndex, moveItem, positionAfterDrop, shiftFor } from './reorder';
+import { autoScrollStep, clampDy, dropIndex, moveItem, positionAfterDrop, shiftFor } from './reorder';
 
 // 높이 80, 간격 12인 행 세 개: top 0, 92, 184
 const rows = [
@@ -38,6 +38,11 @@ describe('dropIndex', () => {
     expect(dropIndex(rows, 2, -185)).toBe(0);
   });
 
+  it('끝까지 끌어 가운데가 맞닿으면(clampDy 한계) 끝자리로 간다', () => {
+    expect(dropIndex(rows, 0, clampDy(rows, 0, 1000))).toBe(2);
+    expect(dropIndex(rows, 2, clampDy(rows, 2, -1000))).toBe(0);
+  });
+
   it('목록 밖으로 끌어도 처음·끝에 머문다', () => {
     expect(dropIndex(rows, 0, 1000)).toBe(2);
     expect(dropIndex(rows, 2, -1000)).toBe(0);
@@ -67,5 +72,40 @@ describe('positionAfterDrop', () => {
         expect(moved[positionAfterDrop(i, from, to)]).toBe(item);
       });
     }
+  });
+});
+
+describe('autoScrollStep', () => {
+  // 보이는 영역 100~700, 가장자리 72px, 최대 16px
+  it('가운데에서는 스크롤하지 않는다', () => {
+    expect(autoScrollStep(400, 100, 700)).toBe(0);
+    expect(autoScrollStep(172, 100, 700)).toBe(0);
+    expect(autoScrollStep(628, 100, 700)).toBe(0);
+  });
+
+  it('위쪽 가장자리에 가까울수록 빠르게 위로', () => {
+    expect(autoScrollStep(136, 100, 700)).toBe(-8);
+    expect(autoScrollStep(100, 100, 700)).toBe(-16);
+    expect(autoScrollStep(20, 100, 700)).toBe(-16);
+  });
+
+  it('아래쪽 가장자리에 가까울수록 빠르게 아래로', () => {
+    expect(autoScrollStep(664, 100, 700)).toBe(8);
+    expect(autoScrollStep(700, 100, 700)).toBe(16);
+    expect(autoScrollStep(800, 100, 700)).toBe(16);
+  });
+});
+
+describe('clampDy', () => {
+  it('목록 안에서는 그대로 둔다', () => {
+    expect(clampDy(rows, 1, 50)).toBe(50);
+    expect(clampDy(rows, 1, -50)).toBe(-50);
+  });
+
+  it('첫 행 위, 마지막 행 아래로는 나가지 않는다', () => {
+    expect(clampDy(rows, 1, -500)).toBe(-92);
+    expect(clampDy(rows, 1, 500)).toBe(92);
+    expect(clampDy(rows, 0, -10)).toBe(0);
+    expect(clampDy(rows, 2, 10)).toBe(0);
   });
 });
