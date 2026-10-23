@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { cx } from '../lib/cx';
 import { clampOffset, isHorizontalSwipe, resolveSwipe, type SwipeAction } from '../lib/swipe';
@@ -26,56 +26,123 @@ interface DragStart {
   y: number;
   axis: Axis | null;
   wasOpen: boolean;
+  lastOffset: number;
 }
 
+const EASE = '200ms ease-out';
+
 /**
- * 레시피 카드를 왼쪽으로 밀면 오른쪽에 동작 버튼이 드러나는 스와이프 행.
- * 판정 로직(가로/세로 구분, 오프셋 clamp, 열림/닫힘 판정)은 lib/swipe.ts의
- * 순수 함수에 맡기고 이 컴포넌트는 제스처 배선과 렌더링만 담당한다.
+ * 레시피 카드를 왼쪽으로 밀면 오른쪽 밖에서 동작 버튼이 따라 들어오는 스와이프 행.
+ * 판정 로직(가로/세로 구분, 오프셋 clamp, 열림/닫힘 판정)은 lib/swipe.ts의 순수 함수에 맡긴다.
+ *
+ * 부드러움을 위해 드래그 중에는 React 상태를 바꾸지 않는다. 위치는 ref로 DOM 스타일에 직접 쓰고
+ * (requestAnimationFrame으로 프레임당 한 번), 움직이는 동안만 will-change로 합성 레이어에 올린다.
+ * React에는 손을 뗄 때 열림/닫힘만 onOpenChange로 알린다.
  */
 export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProps) {
   const actionsWidth = actions.length * ACTION_WIDTH;
-  const restingOffset = open ? -actionsWidth : 0;
-  const [dragOffset, setDragOffset] = useState<number | null>(null);
-  // 드래그 종료 직후 ~ CSS transition이 끝나기 전까지 true. 이 동안은 행이 완전히
-  // 닫힌 상태(offset 0)라도 동작 레이어를 숨기지 않는다(닫히는 애니메이션 중에는 보여야 함).
-  const [transitioning, setTransitioning] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<DragStart | null>(null);
+  // 지금 화면에 그려져 있는(또는 전환으로 향하고 있는) 위치.
+  const offsetRef = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
   const suppressNextClickRef = useRef(false);
-  const prevOffsetRef = useRef(restingOffset);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const offset = dragOffset ?? restingOffset;
-  const isDragging = dragOffset !== null;
-  // 카드가 실제로 밀려나 있지 않고(offset 0) 닫히는 전환 중도 아니면 동작 레이어를 숨긴다.
-  // 손가락을 대기만 한 상태(드래그 시작 전, 길게 누름)도 offset이 0이라 숨겨진다.
-  const actionsHidden = offset === 0 && !transitioning;
-  const transition = !isDragging && !prefersReducedMotion ? '200ms ease-out' : null;
-
-  // 드래그 중이 아닐 때 보이는 offset이 실제로 바뀌면(스크롤로 닫힘, 다른 카드를 탭해 닫힘,
-  // 드래그를 놓아 스냅되는 경우 등) CSS transition이 걸린다. 그 동안은 동작 레이어를 보여준다.
-  // (드래그를 놓았는데 이미 목표 offset에 와 있어 실제로는 안 움직이는 경우는 여기서 걸러진다 —
-  // 그런 경우 transitionend가 영영 안 와서 계속 보이는 상태로 고정되는 걸 막기 위함.)
-  useEffect(() => {
-    if (!isDragging && !prefersReducedMotion && prevOffsetRef.current !== offset) {
-      setTransitioning(true);
+  const setLayerActive = useCallback((active: boolean) => {
+    const value = active ? 'transform' : 'auto';
+    if (contentRef.current) {
+      contentRef.current.style.willChange = value;
     }
-    prevOffsetRef.current = offset;
-  }, [offset, isDragging, prefersReducedMotion]);
-
-  const endDrag = (resolved?: 'open' | 'closed') => {
-    if (dragStartRef.current?.axis === 'horizontal') {
-      suppressNextClickRef.current = true;
-      // 모바일에서는 드래그로 움직인 터치가 click을 아예 안 쏘는 경우가 대부분이라,
-      // 이 플래그가 계속 true로 남아 다음 "진짜" 탭을 삼켜버릴 수 있다. click이 오지
-      // 않아도 다음 틱에 스스로 풀어 둔다.
-      setTimeout(() => {
-        suppressNextClickRef.current = false;
-      }, 0);
+    if (actionsRef.current) {
+      actionsRef.current.style.willChange = active ? 'transform, opacity' : 'auto';
     }
+  }, []);
+
+  const paint = useCallback(
+    (x: number, animate: boolean) => {
+      offsetRef.current = x;
+      const transition = animate && !prefersReducedMotion ? EASE : null;
+      const content = contentRef.current;
+      if (content) {
+        content.style.transition = transition ? `transform ${transition}` : 'none';
+        content.style.transform = `translate3d(${x}px, 0, 0)`;
+      }
+      const layer = actionsRef.current;
+      if (!layer) {
+        return;
+      }
+      layer.style.transition = transition ? `transform ${transition}, opacity ${transition}` : 'none';
+      // 카드가 밀린 만큼 화면 오른쪽 밖에서 따라 들어온다(닫혀 있으면 오른쪽 밖, 투명).
+      layer.style.transform = `translate3d(${actionsWidth + x}px, 0, 0)`;
+      layer.style.opacity = String(Math.min(1, -x / actionsWidth));
+      if (x !== 0) {
+        layer.style.visibility = 'visible';
+        return;
+      }
+      if (!transition) {
+        // 닫혀 있으면 숨겨 둔다. 카드를 누르기만 할 때(드래그 전, 길게 누름) 비치지 않게 한다.
+        layer.style.visibility = 'hidden';
+        setLayerActive(false);
+      }
+      // 닫히는 전환 중이면 transitionend에서 숨긴다.
+    },
+    [actionsWidth, prefersReducedMotion, setLayerActive],
+  );
+
+  // 처음 그릴 때와, 밖에서 open이 바뀌었을 때(스크롤로 닫힘, 다른 카드 탭으로 닫힘 등) 제자리로 보낸다.
+  useLayoutEffect(() => {
+    const target = open ? -actionsWidth : 0;
+    if (offsetRef.current === target) {
+      return;
+    }
+    const isFirstPaint = offsetRef.current === null;
+    if (!isFirstPaint) {
+      setLayerActive(true);
+    }
+    paint(target, !isFirstPaint);
+  }, [open, actionsWidth, paint, setLayerActive]);
+
+  useLayoutEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
+  const cancelFrame = () => {
+    if (frameRef.current === null) {
+      return;
+    }
+    cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+  };
+
+  const settle = (target: number) => {
+    cancelFrame();
+    setLayerActive(true);
+    paint(target, true);
+  };
+
+  const markDragEnded = () => {
+    suppressNextClickRef.current = true;
+    // 모바일에서는 움직인 터치 뒤에 click이 오지 않는 경우가 많아, 다음 틱에 스스로 풀어 둔다.
+    setTimeout(() => {
+      suppressNextClickRef.current = false;
+    }, 0);
+  };
+
+  const finishDrag = (start: DragStart) => {
     dragStartRef.current = null;
-    setDragOffset(null);
-    if (resolved) {
+    if (start.axis !== 'horizontal') {
+      return;
+    }
+    markDragEnded();
+    const resolved = resolveSwipe(start.lastOffset, actionsWidth);
+    settle(resolved === 'open' ? -actionsWidth : 0);
+    if ((resolved === 'open') !== open) {
       onOpenChange(resolved === 'open');
     }
   };
@@ -85,10 +152,16 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
       return;
     }
     // 새 제스처가 시작되면 이전 드래그가 남긴 클릭 억제 플래그를 무조건 리셋한다.
-    // (예: 스와이프로 열고 → 탭으로 닫힌 뒤 → 바로 다음 탭을 또 눌렀을 때 오동작 방지)
     suppressNextClickRef.current = false;
-    dragStartRef.current = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, axis: null, wasOpen: open };
-    setDragOffset(restingOffset);
+    const restingOffset = open ? -actionsWidth : 0;
+    dragStartRef.current = {
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      axis: null,
+      wasOpen: open,
+      lastOffset: restingOffset,
+    };
   };
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -97,9 +170,8 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
       return;
     }
     if (e.pointerType === 'mouse' && e.buttons === 0) {
-      // 데스크톱에서 pointerup을 놓친(창 밖에서 버튼을 뗀 등) 상태로 남은 드래그.
-      // 버튼이 눌려 있지 않은데 move가 오면 드래그를 끝낸다.
-      endDrag(start.wasOpen ? 'open' : 'closed');
+      // 데스크톱에서 pointerup을 놓친 채 남은 드래그는 끝낸다.
+      finishDrag(start);
       return;
     }
     const dx = e.clientX - start.x;
@@ -113,6 +185,7 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
         return;
       }
       start.axis = 'horizontal';
+      setLayerActive(true);
       try {
         e.currentTarget.setPointerCapture(e.pointerId);
       } catch {
@@ -124,7 +197,19 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
       return;
     }
     e.preventDefault();
-    setDragOffset(clampOffset(restingOffset + dx, actionsWidth));
+    const restingOffset = start.wasOpen ? -actionsWidth : 0;
+    start.lastOffset = clampOffset(restingOffset + dx, actionsWidth);
+    if (frameRef.current !== null) {
+      return;
+    }
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+      const current = dragStartRef.current;
+      if (!current) {
+        return;
+      }
+      paint(current.lastOffset, false);
+    });
   };
 
   const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -132,11 +217,7 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
     if (!start || start.pointerId !== e.pointerId) {
       return;
     }
-    if (start.axis !== 'horizontal') {
-      endDrag();
-      return;
-    }
-    endDrag(resolveSwipe(offset, actionsWidth));
+    finishDrag(start);
   };
 
   const handlePointerCancel = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -144,8 +225,12 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
     if (!start || start.pointerId !== e.pointerId) {
       return;
     }
+    dragStartRef.current = null;
+    if (start.axis !== 'horizontal') {
+      return;
+    }
     // 제스처가 중간에 끊기면 드래그 시작 전 상태로 되돌린다(의도치 않은 닫힘/열림 방지).
-    endDrag(start.wasOpen ? 'open' : 'closed');
+    settle(start.wasOpen ? -actionsWidth : 0);
   };
 
   const handleContentClickCapture = (e: MouseEvent<HTMLDivElement>) => {
@@ -165,16 +250,7 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
   return (
     <div className="relative">
       {actionsWidth > 0 && (
-        <div
-          className={cx('absolute inset-y-0 right-0 flex', actionsHidden && 'invisible')}
-          style={{
-            width: actionsWidth,
-            // 카드가 밀린 만큼 화면 오른쪽 밖에서 따라 들어온다(닫혀 있으면 오른쪽 밖에 있다).
-            transform: `translateX(${actionsWidth + offset}px)`,
-            opacity: Math.min(1, -offset / actionsWidth),
-            transition: transition ? `transform ${transition}, opacity ${transition}` : 'none',
-          }}
-        >
+        <div ref={actionsRef} className="absolute inset-y-0 right-0 flex" style={{ width: actionsWidth }}>
           {actions.map((action) => (
             <button
               key={action.key}
@@ -201,11 +277,8 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
         </div>
       )}
       <div
+        ref={contentRef}
         className="relative touch-pan-y"
-        style={{
-          transform: `translateX(${offset}px)`,
-          transition: transition ? `transform ${transition}` : 'none',
-        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -215,7 +288,10 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
           if (e.propertyName !== 'transform' || e.target !== e.currentTarget) {
             return;
           }
-          setTransitioning(false);
+          if (offsetRef.current === 0 && actionsRef.current) {
+            actionsRef.current.style.visibility = 'hidden';
+          }
+          setLayerActive(false);
         }}
       >
         {children}

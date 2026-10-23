@@ -218,6 +218,7 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 - 닫혀 있을 때 동작 버튼은 `tabIndex={-1}`, `aria-hidden`으로 숨긴다. 키보드·스크린리더 사용자는 상세 화면의 삭제 버튼을 쓴다.
 - 동작 영역 배경은 투명(바탕 `canvas`가 보임)이고 클리핑하지 않는다. 바깥 감싸개도 클리핑하지 않아 `Card`의 `shadow-card`가 그대로 보인다.
 - `prefers-reduced-motion`이면 전환 없이 즉시 이동한다. 드래그 중이 아닐 때만 `transform` 200ms `ease-out`을 건다.
+- 드래그 중에는 React 상태를 바꾸지 않는다. 위치는 ref로 `translate3d`를 DOM에 직접 쓰고(`requestAnimationFrame`으로 프레임당 한 번), 움직이는 동안에만 `will-change`로 합성 레이어에 올렸다가 멈추면 해제한다. 손을 뗄 때만 `onOpenChange`로 열림·닫힘을 알린다.
 
 ### 오저뭐 결과 카드 (`PickResultCard`)
 - `Card` 안에 대표 사진(4:3, `rounded-control`), 이름(`title-md`), 재료명 칩 줄. 내가 고른 재료는 선택 칩, 나머지는 기본 칩.
