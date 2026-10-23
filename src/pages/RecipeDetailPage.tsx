@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { IngredientChip } from '../components/IngredientChip';
+import { IngredientGroups } from '../components/IngredientGroups';
 import { LinkifiedText } from '../components/LinkifiedText';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -13,7 +13,6 @@ import { useToast } from '../components/ui/toastContext';
 import { TopBar } from '../components/ui/TopBar';
 import { recipeRepo } from '../db/recipeRepo';
 import { usePhotoUrl } from '../hooks/usePhotoUrl';
-import { groupIngredients } from '../lib/parseIngredients';
 
 export function RecipeDetailPage() {
   const { id = '' } = useParams();
@@ -64,18 +63,7 @@ export function RecipeDetailPage() {
         <section>
           <h2 className="mb-3 text-title-md text-ink">재료</h2>
           <Card>
-            <div className="flex flex-col gap-4">
-              {groupIngredients(recipe.ingredients).map(({ group, items }) => (
-                <div key={group || '__none__'}>
-                  {group && <h3 className="mb-2 text-body-strong text-body-soft">{group}</h3>}
-                  <div className="flex flex-wrap gap-2">
-                    {items.map((item, index) => (
-                      <IngredientChip key={`${item.name}-${index}`} name={item.name} amount={item.amount} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <IngredientGroups items={recipe.ingredients} />
           </Card>
         </section>
 

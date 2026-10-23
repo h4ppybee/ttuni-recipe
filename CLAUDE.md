@@ -53,11 +53,12 @@ src/
     search.ts, pickRandom.ts, linkify.ts, validateDraft.ts
     backupFormat.ts                백업 형식 검사(validateBackup), 병합 계획(planMerge)
     swipe.ts, pull.ts              스와이프·당겨서 초기화 판정
-    image.ts, deliverFile.ts, prefs.ts, history.ts, dataUrl.ts, date.ts, errors.ts, steps.ts, cx.ts
+    image.ts, deliverFile.ts, prefs.ts, history.ts, dataUrl.ts, date.ts, errors.ts, cx.ts
+    steps.ts                       단계 키, 다음 단계 삽입, Cmd/Ctrl+Enter 판정
   hooks/                           useDebouncedValue, usePhotoUrl/useBlobUrl, usePullToReset, usePrefersReducedMotion
   components/
     ui/                            Card, Button, IconButton, Chip, TextField, TextArea, Dialog, Toast(+toastContext), EmptyState, Banner, TopBar, Fab
-    AppShell, TabBar, RecipeCard, RecipeThumb, IngredientInput, IngredientChip, StepEditor, PhotoPicker, PickResultCard, LinkifiedText, SwipeRow, RouteError
+    AppShell, TabBar, RecipeCard, RecipeThumb, IngredientInput, IngredientChip, IngredientGroups, StepEditor, PhotoPicker, PickResultCard, LinkifiedText, SwipeRow, RouteError
   pages/                           RecipeListPage, RecipeDetailPage, RecipeEditPage, PickPage, SettingsPage
   test/                            setup(fake-indexeddb), fixtures(makeRecipe), designTokens.test.ts
 scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pillow)
@@ -108,6 +109,8 @@ scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pi
 | 2026-10-23 | 목록 스와이프 삭제(동그라미 버튼, 오른쪽에서 진입) | 사용자 요청. 나중에 즐겨찾기 추가 예정 |
 | 2026-10-23 | 메뉴추천: 탭 이름 "메뉴추천"(요술봉), 제목 "오저뭐?", [선택 해제] 대신 당겨서 초기화 | 사용자 요청 |
 | 2026-10-23 | 설정의 저장 공간은 레시피 데이터(내용+사진)만 표시 | 브라우저 전체 사용량은 앱 파일·폰트 캐시가 대부분이라 혼동 |
+| 2026-10-23 | 작성 화면 재료 미리보기도 상세와 같은 칩(`IngredientGroups` 공유) | 사용자 요청. 입력은 텍스트 칸 유지 |
+| 2026-10-23 | 단계 칸 Enter는 줄바꿈, Cmd/Ctrl+Enter는 다음 단계 추가·포커스 | 사용자 요청. iPhone 키보드엔 Cmd가 없어 Enter를 줄바꿈으로 둠 |
 
 ## 다음에 할 수 있는 일
 

@@ -262,15 +262,16 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 ### 재료 입력 (`IngredientInput`)
 - `TextArea` 하나(최소 4줄). 재료는 한 줄에 하나씩 적는다. placeholder: `Enter로 줄을 바꿔 한 줄에 하나씩 적어 주세요` / `대파 1대` / `[양념장]` / `간장 3큰술`(줄바꿈으로 구분, 대괄호 줄은 재료 대분류 제목 예시).
 - 바로 위에 자동완성 제안 칩 줄(가로 스크롤). 제안이 없으면 줄을 숨긴다.
-- 바로 아래 파싱 미리보기: `재료명`(`body-strong`, `ink`) + `양`(`body-md`, `muted`) 한 줄씩, 줄 사이 `hairline`. 양이 없으면 양 칸을 비운다. 분류가 있으면 그 분류의 재료 줄 위에 분류 제목(`body-strong`, `body-soft`)을 먼저 보여준다.
+- 바로 아래(12px 간격) 파싱 미리보기: 상세 화면과 같은 `IngredientGroups`(분류 제목 + `IngredientChip` 줄)를 카드 없이 둔다. 재료가 없으면 숨긴다.
 
 ### 재료 목록 (상세 화면)
-- `Card` 안에 분류 없는 재료의 `IngredientChip`을 먼저 놓고, 이어서 분류마다 작은 제목(`body-strong`, `body-soft`)과 그 분류의 칩 줄을 둔다. 분류가 하나도 없으면 지금처럼 칩 한 줄만 보인다.
+- `Card` 안에 `IngredientGroups`를 둔다(작성 화면 미리보기와 같은 컴포넌트). 분류 없는 재료의 `IngredientChip`을 먼저 놓고, 이어서 분류마다 작은 제목(`body-strong`, `body-soft`)과 그 분류의 칩 줄을 둔다. 분류가 하나도 없으면 지금처럼 칩 한 줄만 보인다.
 - 칩은 가로로 나열하고 넘치면 줄바꿈한다(`flex flex-wrap gap-2`).
 
 ### 단계 목록 (`StepList`)
 - 보기: 번호 원(24px, `primary-surface` 배경, `primary-text` 숫자, `caption-strong`) + 설명(`body-lg`, `body`). 단계 사이 20px.
 - 편집: 번호 + `TextArea` + 오른쪽 아이콘 버튼(위로, 아래로, 삭제). 맨 아래 `secondary` 버튼 "단계 추가하기".
+- 단계 칸에서 Enter는 줄바꿈이다. 하드웨어 키보드의 Cmd+Enter(Windows는 Ctrl+Enter)는 지금 단계 바로 뒤에 빈 단계를 넣고 그 칸으로 포커스를 옮긴다. 한글 조합 중에는 무시한다.
 
 ### 사진
 - 상세 대표 사진: 화면 폭 - 32px, 비율 4:3, `rounded-card`, `object-cover`.

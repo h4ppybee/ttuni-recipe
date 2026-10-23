@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
-import { newStep, type StepItem } from '../lib/steps';
+import { useRef } from 'react';
+import { flushSync } from 'react-dom';
+import { insertStepAfter, isAddStepShortcut, newStep, type StepItem } from '../lib/steps';
 import { Button } from './ui/Button';
 import { FieldError, FieldLabel } from './ui/TextField';
 import { IconButton } from './ui/IconButton';
@@ -12,6 +14,7 @@ interface StepEditorProps {
 }
 
 export function StepEditor({ steps, onChange, error }: StepEditorProps) {
+  const inputs = useRef(new Map<string, HTMLTextAreaElement>());
   const update = (index: number, text: string) => onChange(steps.map((s, i) => (i === index ? { ...s, text } : s)));
   const remove = (index: number) => onChange(steps.filter((_, i) => i !== index));
   const move = (index: number, delta: number) => {
@@ -22,6 +25,12 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
     const next = [...steps];
     [next[index], next[target]] = [next[target], next[index]];
     onChange(next);
+  };
+  const addAfter = (index: number) => {
+    const { steps: next, inserted } = insertStepAfter(steps, index);
+    // 새 칸이 DOM에 생긴 뒤 같은 핸들러 안에서 바로 포커스한다(키보드 유지).
+    flushSync(() => onChange(next));
+    inputs.current.get(inserted.key)?.focus();
   };
 
   return (
@@ -38,7 +47,21 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
                 rows={2}
                 value={step.text}
                 aria-label={`${index + 1}단계`}
+                ref={(el) => {
+                  if (el) {
+                    inputs.current.set(step.key, el);
+                  } else {
+                    inputs.current.delete(step.key);
+                  }
+                }}
                 onChange={(e) => update(index, e.target.value)}
+                onKeyDown={(e) => {
+                  if (!isAddStepShortcut({ ...e, isComposing: e.nativeEvent.isComposing })) {
+                    return;
+                  }
+                  e.preventDefault();
+                  addAfter(index);
+                }}
               />
             </div>
             <div className="flex flex-col">
