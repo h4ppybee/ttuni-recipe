@@ -195,7 +195,7 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 ## 6. 컴포넌트
 
 ### 하단 탭 바 (`TabBar`)
-- 탭 3개: 레시피, 오저뭐, 설정. 아이콘(24px, 단순 stroke) 위, 라벨(`tab-label`) 아래.
+- 탭 3개: 레시피, 메뉴추천(요술봉 아이콘 `WandSparkles`, 화면 제목은 "오저뭐?"), 설정. 아이콘(24px, 단순 stroke) 위, 라벨(`tab-label`) 아래.
 - 높이 56px + `env(safe-area-inset-bottom)`, 배경 `surface-card`, 위 테두리 `hairline`, 화면 하단 고정.
 - 활성: 아이콘 `primary`, 라벨 `ink`. 비활성: 아이콘·라벨 `muted-soft`. 활성 탭에 `aria-current="page"`.
 - 상세·편집 화면에서는 숨긴다.
@@ -227,7 +227,7 @@ Pretendard 하나만 쓴다. npm `pretendard` 패키지의 `dist/web/variable/pr
 ### 버튼 (`Button`)
 | 변형 | 배경 / 글자 | 쓰임 |
 |---|---|---|
-| `primary` | `primary` / `on-primary` | 저장하기, 오늘 저녁 뭐?, 삭제 확인 |
+| `primary` | `primary` / `on-primary` | 저장하기, 메뉴 추천 뽑기, 삭제 확인 |
 | `secondary` | `primary-surface` / `primary-text` | 다시 뽑기, 레시피 보기 |
 | `weak` | `surface-strong` / `body` | 삭제, 닫기, 선택 해제 |
 | `text` | 투명 / `primary-text` | 보조 링크성 동작 |

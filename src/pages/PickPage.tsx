@@ -37,12 +37,12 @@ export function PickPage() {
   }, [names, filter]);
 
   if (names === undefined) {
-    return <TopBar title="오늘 저녁 뭐?" />;
+    return <TopBar title="오저뭐?" />;
   }
   if (names.length === 0) {
     return (
       <>
-        <TopBar title="오늘 저녁 뭐?" />
+        <TopBar title="오저뭐?" />
         <EmptyState message="먼저 레시피를 저장해 주세요." actionLabel="새 레시피 만들기" onAction={() => navigate('/recipes/new')} />
       </>
     );
@@ -68,7 +68,7 @@ export function PickPage() {
 
   return (
     <>
-      <TopBar title="오늘 저녁 뭐?" />
+      <TopBar title="오저뭐?" />
       <div className="flex flex-col gap-4 px-4">
         <p className="text-body-md text-body-soft">가지고 있는 재료를 골라 주세요.</p>
         <TextField value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="재료 찾기" aria-label="재료 찾기" />
@@ -90,7 +90,7 @@ export function PickPage() {
           </Button>
         )}
         <Button block disabled={effective.length === 0} onClick={() => draw()}>
-          오늘 저녁 뭐?
+          메뉴 추천 뽑기
         </Button>
         {effective.length === 0 && <p className="text-center text-caption text-muted">재료를 1개 이상 골라 주세요.</p>}
         {state.kind === 'none' && (

@@ -1,10 +1,10 @@
-import { BookOpen, Settings, Shuffle } from 'lucide-react';
+import { BookOpen, Settings, WandSparkles } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { cx } from '../lib/cx';
 
 const TABS = [
   { to: '/', label: '레시피', Icon: BookOpen, end: true },
-  { to: '/pick', label: '오저뭐', Icon: Shuffle, end: false },
+  { to: '/pick', label: '메뉴추천', Icon: WandSparkles, end: false },
   { to: '/settings', label: '설정', Icon: Settings, end: false },
 ];
 
