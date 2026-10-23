@@ -1,6 +1,8 @@
-import { ArrowDown, ArrowUp, X } from 'lucide-react';
-import { useRef } from 'react';
+import { GripVertical, X } from 'lucide-react';
+import { useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { dropIndex, moveItem, positionAfterDrop, shiftFor, type RowBox } from '../lib/reorder';
 import { insertStepAfter, isAddStepShortcut, newStep, type StepItem } from '../lib/steps';
 import { Button } from './ui/Button';
 import { FieldError, FieldLabel } from './ui/TextField';
@@ -13,19 +15,65 @@ interface StepEditorProps {
   error?: string;
 }
 
+// 단계 사이 간격(gap-3). 끌린 행이 빠진 자리만큼 다른 행이 비키는 거리 계산에 쓴다.
+const ROW_GAP = 12;
+// 끌고 있는 행을 카드처럼 띄운다. Tailwind가 클래스를 찾을 수 있게 문자열로 둔다.
+const LIFTED_CLASSES = ['relative', 'z-10', 'rounded-card', 'bg-surface-card', 'shadow-floating'];
+const EASE = 'transform 200ms ease-out';
+
+// 끄는 동안 번호 원도 지금 놓일 자리를 따라가게 DOM 글자만 바꾼다(손을 떼면 원래대로 되돌린다).
+function setNumber(row: HTMLElement, n: number) {
+  // textContent로 바꾸면 React가 가진 텍스트 노드가 갈려 나가므로, 그 노드의 값만 바꾼다.
+  const text = row.querySelector('[data-step-number]')?.firstChild;
+  if (text) {
+    text.nodeValue = String(n);
+  }
+}
+
+interface Drag {
+  pointerId: number;
+  from: number;
+  startY: number;
+  dy: number;
+  rows: RowBox[];
+  els: HTMLElement[];
+}
+
+type RefMap<T> = Map<string, T>;
+
+function bindRef<T>(map: RefObject<RefMap<T>>, key: string) {
+  return (el: T | null) => {
+    if (el) {
+      map.current.set(key, el);
+    } else {
+      map.current.delete(key);
+    }
+  };
+}
+
+/**
+ * 단계 목록 편집. 각 행의 손잡이를 끌어 순서를 바꾼다.
+ * 끄는 동안에는 React 상태를 바꾸지 않고 ref로 transform만 쓴다(rAF로 프레임당 한 번).
+ * 손을 뗄 때 스타일을 지우고 같은 틱에 바뀐 순서를 onChange로 알린다.
+ */
 export function StepEditor({ steps, onChange, error }: StepEditorProps) {
-  const inputs = useRef(new Map<string, HTMLTextAreaElement>());
+  const rows = useRef<RefMap<HTMLLIElement>>(new Map());
+  const inputs = useRef<RefMap<HTMLTextAreaElement>>(new Map());
+  const handles = useRef<RefMap<HTMLButtonElement>>(new Map());
+  const dragRef = useRef<Drag | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  useLayoutEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
   const update = (index: number, text: string) => onChange(steps.map((s, i) => (i === index ? { ...s, text } : s)));
   const remove = (index: number) => onChange(steps.filter((_, i) => i !== index));
-  const move = (index: number, delta: number) => {
-    const target = index + delta;
-    if (target < 0 || target >= steps.length) {
-      return;
-    }
-    const next = [...steps];
-    [next[index], next[target]] = [next[target], next[index]];
-    onChange(next);
-  };
   const addAfter = (index: number) => {
     const { steps: next, inserted } = insertStepAfter(steps, index);
     // 새 칸이 DOM에 생긴 뒤 같은 핸들러 안에서 바로 포커스한다(키보드 유지).
@@ -33,27 +81,140 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
     inputs.current.get(inserted.key)?.focus();
   };
 
+  const paint = (drag: Drag) => {
+    const to = dropIndex(drag.rows, drag.from, drag.dy);
+    const span = drag.rows[drag.from].height + ROW_GAP;
+    drag.els.forEach((el, i) => {
+      setNumber(el, positionAfterDrop(i, drag.from, to) + 1);
+      if (i === drag.from) {
+        el.style.transition = 'none';
+        el.style.transform = `translate3d(0, ${drag.dy}px, 0)`;
+        return;
+      }
+      el.style.transition = prefersReducedMotion ? 'none' : EASE;
+      el.style.transform = `translate3d(0, ${shiftFor(i, drag.from, to, span)}px, 0)`;
+    });
+  };
+
+  const clearStyles = (drag: Drag) => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    drag.els.forEach((el, i) => {
+      setNumber(el, i + 1);
+      el.style.transition = 'none';
+      el.style.transform = '';
+      el.style.willChange = 'auto';
+    });
+    drag.els[drag.from].classList.remove(...LIFTED_CLASSES);
+  };
+
+  const handlePointerDown = (index: number, e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) {
+      return;
+    }
+    const els = steps.map((s) => rows.current.get(s.key)).filter((el): el is HTMLLIElement => !!el);
+    if (els.length !== steps.length) {
+      return;
+    }
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // 손가락이 손잡이 밖으로 나가도 추적하기 위한 보조 장치다. 실패해도 드래그는 계속한다.
+    }
+    const drag: Drag = {
+      pointerId: e.pointerId,
+      from: index,
+      startY: e.clientY,
+      dy: 0,
+      rows: els.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return { top: rect.top, height: rect.height };
+      }),
+      els,
+    };
+    els.forEach((el) => {
+      el.style.willChange = 'transform';
+    });
+    els[index].classList.add(...LIFTED_CLASSES);
+    dragRef.current = drag;
+  };
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) {
+      return;
+    }
+    e.preventDefault();
+    drag.dy = e.clientY - drag.startY;
+    if (frameRef.current !== null) {
+      return;
+    }
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+      const current = dragRef.current;
+      if (!current) {
+        return;
+      }
+      paint(current);
+    });
+  };
+
+  const handlePointerUp = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) {
+      return;
+    }
+    dragRef.current = null;
+    const to = dropIndex(drag.rows, drag.from, drag.dy);
+    clearStyles(drag);
+    if (to === drag.from) {
+      return;
+    }
+    // 스타일을 지운 것과 순서 반영이 같은 프레임에 그려지도록 동기로 렌더한다.
+    flushSync(() => onChange(moveItem(steps, drag.from, to)));
+  };
+
+  const handlePointerCancel = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) {
+      return;
+    }
+    dragRef.current = null;
+    clearStyles(drag);
+  };
+
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLButtonElement>) => {
+    const delta = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+    const target = index + delta;
+    if (delta === 0 || target < 0 || target >= steps.length) {
+      return;
+    }
+    e.preventDefault();
+    const key = steps[index].key;
+    flushSync(() => onChange(moveItem(steps, index, target)));
+    handles.current.get(key)?.focus();
+  };
+
   return (
     <div>
       <FieldLabel>만드는 방법</FieldLabel>
       <ol className="flex flex-col gap-3">
         {steps.map((step, index) => (
-          <li key={step.key} className="flex gap-2">
-            <span className="mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary-surface text-caption-strong text-primary-text">
+          <li key={step.key} ref={bindRef(rows, step.key)} className="flex gap-2">
+            <span
+              data-step-number
+              className="mt-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary-surface text-caption-strong text-primary-text">
               {index + 1}
             </span>
             <div className="flex-1">
               <TextArea
+                ref={bindRef(inputs, step.key)}
                 rows={2}
                 value={step.text}
                 aria-label={`${index + 1}단계`}
-                ref={(el) => {
-                  if (el) {
-                    inputs.current.set(step.key, el);
-                  } else {
-                    inputs.current.delete(step.key);
-                  }
-                }}
                 onChange={(e) => update(index, e.target.value)}
                 onKeyDown={(e) => {
                   if (!isAddStepShortcut({ ...e, isComposing: e.nativeEvent.isComposing })) {
@@ -65,11 +226,18 @@ export function StepEditor({ steps, onChange, error }: StepEditorProps) {
               />
             </div>
             <div className="flex flex-col">
-              <IconButton label="위로 옮기기" disabled={index === 0} onClick={() => move(index, -1)}>
-                <ArrowUp size={20} strokeWidth={2} />
-              </IconButton>
-              <IconButton label="아래로 옮기기" disabled={index === steps.length - 1} onClick={() => move(index, 1)}>
-                <ArrowDown size={20} strokeWidth={2} />
+              <IconButton
+                ref={bindRef(handles, step.key)}
+                label={`${index + 1}단계 순서 바꾸기`}
+                className="cursor-grab touch-none active:cursor-grabbing"
+                disabled={steps.length === 1}
+                onPointerDown={(e) => handlePointerDown(index, e)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+              >
+                <GripVertical size={20} strokeWidth={2} />
               </IconButton>
               <IconButton label="단계 지우기" disabled={steps.length === 1} onClick={() => remove(index)}>
                 <X size={20} strokeWidth={2} />

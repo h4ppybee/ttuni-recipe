@@ -53,6 +53,7 @@ src/
     search.ts, pickRandom.ts, linkify.ts, validateDraft.ts
     backupFormat.ts                백업 형식 검사(validateBackup), 병합 계획(planMerge)
     swipe.ts, pull.ts              스와이프·당겨서 초기화 판정
+    reorder.ts                     단계 드래그 순서 변경(놓일 자리, 비킬 거리, 배열 이동)
     image.ts, deliverFile.ts, prefs.ts, history.ts, dataUrl.ts, date.ts, errors.ts, cx.ts
     steps.ts                       단계 키, 다음 단계 삽입, Cmd/Ctrl+Enter 판정
   hooks/                           useDebouncedValue, usePhotoUrl/useBlobUrl, usePullToReset, usePrefersReducedMotion
@@ -81,7 +82,7 @@ scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pi
 2. **Dexie 트랜잭션 안에서는 DB 작업만 한다.** 사진 변환, data URL ↔ Blob 변환처럼 Dexie가 아닌 await는 트랜잭션 전에 끝낸다.
 3. **UI는 `recipeRepo`·`backupService`만 부르고 Dexie(`db`)를 직접 쓰지 않는다.**
 4. **디자인 토큰만 쓴다.** `rounded-[..]`, Tailwind 기본 radius·shadow 이름, `#hex` 색, `bg/text/border-[#..]`를 컴포넌트에 쓰지 않는다. `shadow-card`는 `components/ui/Card.tsx`에서만 쓴다. `src/test/designTokens.test.ts`가 검사한다.
-5. **제스처는 React 렌더 없이 그린다.** `SwipeRow`·`usePullToReset`은 드래그 중 ref로 DOM 스타일을 직접 쓰고(rAF로 프레임당 한 번), 움직이는 동안만 `will-change`를 켠다. setState는 손을 뗄 때만.
+5. **제스처는 React 렌더 없이 그린다.** `SwipeRow`·`usePullToReset`·`StepEditor`(단계 드래그)는 드래그 중 ref로 DOM 스타일을 직접 쓰고(rAF로 프레임당 한 번), 움직이는 동안만 `will-change`를 켠다. setState는 손을 뗄 때만.
 6. **코드 스타일**: if/else 본문은 한 줄이어도 중괄호, 중첩 if 대신 early return. 컴포넌트 파일에서 컴포넌트 외 값을 export하지 않는다(oxlint `only-export-components`) — 헬퍼·타입은 `src/lib`로.
 7. **문구**: 토스 UX 라이팅(해요체, 다이얼로그 왼쪽 버튼은 "닫기", 버튼은 "~하기"). 예시는 `DESIGN.md` 9절.
 8. iOS 대응: 상단 바 safe-area는 바깥 패딩 + 안쪽 56px 줄로 분리, 추천 칩을 누를 때 `flushSync` 후 같은 핸들러에서 focus(키보드 유지), 백업 내려받기 object URL은 60초 뒤 해제, `navigator.share`는 탭 직후에만 호출(만들기 → 공유하기 2단계).
@@ -111,6 +112,7 @@ scripts/make-icons.py              tomato.png → public/ PWA 아이콘 5종 (Pi
 | 2026-10-23 | 설정의 저장 공간은 레시피 데이터(내용+사진)만 표시 | 브라우저 전체 사용량은 앱 파일·폰트 캐시가 대부분이라 혼동 |
 | 2026-10-23 | 작성 화면 재료 미리보기도 상세와 같은 칩(`IngredientGroups` 공유) | 사용자 요청. 입력은 텍스트 칸 유지 |
 | 2026-10-23 | 단계 칸 Enter는 줄바꿈, Cmd/Ctrl+Enter는 다음 단계 추가·포커스 | 사용자 요청. iPhone 키보드엔 Cmd가 없어 Enter를 줄바꿈으로 둠 |
+| 2026-10-23 | 단계 편집 버튼을 손잡이+X로 줄이고 손잡이 드래그로 순서 변경(라이브러리 없이 직접 구현) | 사용자 요청. 스와이프와 같은 ref+rAF 방식으로 맞춤, 키보드는 손잡이에서 ↑/↓ |
 
 ## 다음에 할 수 있는 일
 
