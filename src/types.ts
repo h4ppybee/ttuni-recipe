@@ -1,6 +1,7 @@
 export interface Ingredient {
   name: string;
   amount: string;
+  group?: string;
 }
 
 export interface Recipe {

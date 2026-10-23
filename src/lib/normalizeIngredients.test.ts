@@ -21,6 +21,21 @@ describe('normalizeIngredients', () => {
     ];
     expect(normalizeIngredients(items)).toEqual(items);
   });
+
+  it('group이 빈 문자열이거나 공백뿐이면 필드를 없앤다', () => {
+    expect(normalizeIngredients([{ name: '대파', amount: '1대', group: '' }])).toEqual([
+      { name: '대파', amount: '1대' },
+    ]);
+    expect(normalizeIngredients([{ name: '대파', amount: '1대', group: '   ' }])).toEqual([
+      { name: '대파', amount: '1대' },
+    ]);
+  });
+
+  it('group의 앞뒤 공백을 지우고 연속 공백을 하나로 줄인다', () => {
+    expect(normalizeIngredients([{ name: '대파', amount: '1대', group: '  양념   장 ' }])).toEqual([
+      { name: '대파', amount: '1대', group: '양념 장' },
+    ]);
+  });
 });
 
 describe('buildIngredientNames', () => {

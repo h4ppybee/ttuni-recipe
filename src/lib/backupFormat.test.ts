@@ -66,6 +66,23 @@ describe('validateBackup', () => {
     expect(validateBackup(file({ photos }))).toEqual({ ok: false, reason: 'corrupted' });
   });
 
+  it('재료에 group이 문자열이면 통과한다(예전 백업은 group 없이도 통과)', () => {
+    const recipe = {
+      ...makeRecipe({ id: 'r1', photoId: 'p1' }),
+      ingredients: [{ name: '간장', amount: '1큰술', group: '양념장' }],
+    };
+    const result = validateBackup(file({ recipes: [recipe] }));
+    expect(result.ok).toBe(true);
+  });
+
+  it('재료의 group이 문자열이 아니면 corrupted', () => {
+    const recipe = {
+      ...makeRecipe({ id: 'r1', photoId: 'p1' }),
+      ingredients: [{ name: '간장', amount: '1큰술', group: 123 }],
+    };
+    expect(validateBackup(file({ recipes: [recipe] }))).toEqual({ ok: false, reason: 'corrupted' });
+  });
+
   it('재료를 다시 정리하고 ingredientNames는 파일 값을 버리고 다시 계산한다', () => {
     const recipe = {
       ...makeRecipe({ id: 'r1' }),

@@ -32,7 +32,13 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 const isImageDataUrl = (v: unknown) => isStr(v) && /^data:image\/[\w.+-]+;base64,/.test(v);
 
 function isIngredient(v: unknown): v is Ingredient {
-  return isObj(v) && isStr(v.name) && isStr(v.amount);
+  if (!isObj(v) || !isStr(v.name) || !isStr(v.amount)) {
+    return false;
+  }
+  if (v.group !== undefined && !isStr(v.group)) {
+    return false;
+  }
+  return true;
 }
 
 function toRecipe(v: unknown): Recipe | undefined {

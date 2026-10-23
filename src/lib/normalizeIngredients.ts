@@ -6,7 +6,15 @@ export function squashSpaces(value: string): string {
 
 export function normalizeIngredients(items: Ingredient[]): Ingredient[] {
   return items
-    .map((item) => ({ name: squashSpaces(item.name), amount: squashSpaces(item.amount) }))
+    .map((item) => {
+      const name = squashSpaces(item.name);
+      const amount = squashSpaces(item.amount);
+      const group = item.group === undefined ? '' : squashSpaces(item.group);
+      if (group === '') {
+        return { name, amount };
+      }
+      return { name, amount, group };
+    })
     .filter((item) => item.name !== '');
 }
 
