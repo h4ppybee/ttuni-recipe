@@ -10,7 +10,8 @@ interface SwipeRowProps {
   children: ReactNode;
 }
 
-const ACTION_WIDTH = 80;
+// 버튼 하나가 차지하는 칸. 48px 동그라미를 가운데 두어 카드와 12px 떨어지게 한다.
+const ACTION_WIDTH = 72;
 
 const TONE_CLASS: Record<SwipeAction['tone'], string> = {
   danger: 'bg-primary text-on-primary',
@@ -46,9 +47,10 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
 
   const offset = dragOffset ?? restingOffset;
   const isDragging = dragOffset !== null;
-  // 완전히 닫혀 있고(offset 0) 드래그 중도 아니고 전환 중도 아닐 때만 동작 레이어를 숨긴다.
-  // Card의 active:scale-[0.98]이나 모서리 안티앨리어싱으로 빨간 배경이 비치는 것을 막는다.
-  const actionsHidden = offset === 0 && !isDragging && !transitioning;
+  // 카드가 실제로 밀려나 있지 않고(offset 0) 닫히는 전환 중도 아니면 동작 레이어를 숨긴다.
+  // 손가락을 대기만 한 상태(드래그 시작 전, 길게 누름)도 offset이 0이라 숨겨진다.
+  const actionsHidden = offset === 0 && !transitioning;
+  const transition = !isDragging && !prefersReducedMotion ? '200ms ease-out' : null;
 
   // 드래그 중이 아닐 때 보이는 offset이 실제로 바뀌면(스크롤로 닫힘, 다른 카드를 탭해 닫힘,
   // 드래그를 놓아 스냅되는 경우 등) CSS transition이 걸린다. 그 동안은 동작 레이어를 보여준다.
@@ -164,8 +166,14 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
     <div className="relative">
       {actionsWidth > 0 && (
         <div
-          className={cx('absolute inset-y-0 right-0 flex overflow-hidden rounded-r-card', actionsHidden && 'invisible')}
-          style={{ width: actionsWidth }}
+          className={cx('absolute inset-y-0 right-0 flex', actionsHidden && 'invisible')}
+          style={{
+            width: actionsWidth,
+            // 카드가 밀린 만큼 화면 오른쪽 밖에서 따라 들어온다(닫혀 있으면 오른쪽 밖에 있다).
+            transform: `translateX(${actionsWidth + offset}px)`,
+            opacity: Math.min(1, -offset / actionsWidth),
+            transition: transition ? `transform ${transition}, opacity ${transition}` : 'none',
+          }}
         >
           {actions.map((action) => (
             <button
@@ -177,10 +185,17 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
                 onOpenChange(false);
                 action.onPress();
               }}
-              className={cx('flex h-full w-20 flex-col items-center justify-center gap-1', TONE_CLASS[action.tone])}
+              aria-label={action.label}
+              className="flex h-full w-[72px] items-center justify-center"
             >
-              {action.icon}
-              <span className="text-caption-strong">{action.label}</span>
+              <span
+                className={cx(
+                  'flex h-12 w-12 items-center justify-center rounded-pill transition-transform duration-150 active:scale-95',
+                  TONE_CLASS[action.tone],
+                )}
+              >
+                {action.icon}
+              </span>
             </button>
           ))}
         </div>
@@ -189,7 +204,7 @@ export function SwipeRow({ open, onOpenChange, actions, children }: SwipeRowProp
         className="relative touch-pan-y"
         style={{
           transform: `translateX(${offset}px)`,
-          transition: !isDragging && !prefersReducedMotion ? 'transform 200ms ease-out' : 'none',
+          transition: transition ? `transform ${transition}` : 'none',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
