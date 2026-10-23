@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { pieceAt, replacePieceName, suggestIngredientNames } from './ingredientCaret';
 
 describe('pieceAt', () => {
-  it('커서가 있는 쉼표 사이 조각을 돌려준다', () => {
-    const text = '대파 1대, 양';
+  it('커서가 있는 줄을 조각으로 돌려준다', () => {
+    const text = '대파 1대\n 양';
     expect(pieceAt(text, text.length)).toEqual({ start: 6, end: 8, piece: ' 양' });
   });
 
@@ -11,8 +11,8 @@ describe('pieceAt', () => {
     expect(pieceAt('대파\n양파', 4)).toEqual({ start: 3, end: 5, piece: '양파' });
   });
 
-  it('숫자 사이의 쉼표는 조각 경계로 보지 않는다', () => {
-    expect(pieceAt('물 1,000ml', 9)).toEqual({ start: 0, end: 9, piece: '물 1,000ml' });
+  it('쉼표는 조각 경계로 보지 않는다', () => {
+    expect(pieceAt('소금, 후', 6)).toEqual({ start: 0, end: 6, piece: '소금, 후' });
   });
 });
 
@@ -36,10 +36,10 @@ describe('suggestIngredientNames', () => {
 
 describe('replacePieceName', () => {
   it('커서 조각의 재료명만 바꾸고 양은 남긴다', () => {
-    const text = '대파 1대, 양 2개';
-    const result = replacePieceName(text, 8, '양파');
-    expect(result.text).toBe('대파 1대, 양파 2개');
-    expect(result.caret).toBe('대파 1대, 양파 2개'.length);
+    const text = '대파 1대\n양 2개';
+    const result = replacePieceName(text, 7, '양파');
+    expect(result.text).toBe('대파 1대\n양파 2개');
+    expect(result.caret).toBe('대파 1대\n양파 2개'.length);
   });
 
   it('양이 없으면 재료명만 넣는다', () => {

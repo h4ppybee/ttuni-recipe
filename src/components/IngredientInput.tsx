@@ -47,9 +47,9 @@ export function IngredientInput({ value, onChange, knownNames, error }: Ingredie
       <TextArea
         ref={ref}
         label="재료"
-        rows={3}
+        rows={4}
         value={value}
-        placeholder="대파 1대, 양파 1개, 간장 200ml"
+        placeholder={'한 줄에 하나씩 적어 주세요\n대파 1대\n양파 1개\n간장 200ml'}
         onChange={(e) => {
           onChange(e.target.value);
           setCaret(e.target.selectionStart);

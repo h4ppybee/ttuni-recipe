@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { makeRecipe } from '../test/fixtures';
 import { searchRecipes } from './search';
 
-const pasta = makeRecipe({ id: 'pasta', name: '토마토 Pasta', ingredientText: '토마토 2개, 면 100g', updatedAt: 10 });
-const egg = makeRecipe({ id: 'egg', name: '토마토 달걀볶음', ingredientText: '토마토 1개, 계란 2개', updatedAt: 30 });
-const soup = makeRecipe({ id: 'soup', name: '계란국', ingredientText: '계란 2개, 대파 1대, 물 500ml', updatedAt: 20 });
+const pasta = makeRecipe({ id: 'pasta', name: '토마토 Pasta', ingredientText: '토마토 2개\n면 100g', updatedAt: 10 });
+const egg = makeRecipe({ id: 'egg', name: '토마토 달걀볶음', ingredientText: '토마토 1개\n계란 2개', updatedAt: 30 });
+const soup = makeRecipe({ id: 'soup', name: '계란국', ingredientText: '계란 2개\n대파 1대\n물 500ml', updatedAt: 20 });
 const all = [pasta, egg, soup];
 
 describe('searchRecipes', () => {
