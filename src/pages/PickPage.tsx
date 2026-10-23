@@ -34,13 +34,16 @@ export function PickPage() {
   }, [effective]);
 
   // 화면 맨 위에서 아래로 당겼다 놓으면 고른 재료와 결과를 초기화한다(선택 해제 버튼 대신).
-  const canReset = effective.length > 0 || state.kind !== 'idle' || filter !== '';
+  // 모션은 항상 보여주고, 실제로 지운 게 있을 때만 토스트를 띄운다.
+  const hasSomethingToReset = effective.length > 0 || state.kind !== 'idle' || filter !== '';
   const { indicatorRef: pullIndicatorRef, iconRef: pullIconRef } = usePullToReset(() => {
     setSelected([]);
     setFilter('');
     setState({ kind: 'idle' });
-    toast('선택을 초기화했어요.');
-  }, canReset);
+    if (hasSomethingToReset) {
+      toast('선택을 초기화했어요.');
+    }
+  }, true);
 
   const visibleNames = useMemo(() => {
     const q = filter.trim();

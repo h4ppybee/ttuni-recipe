@@ -17,6 +17,22 @@ export function usePullToReset(onReset: () => void, enabled: boolean) {
     onResetRef.current = onReset;
   }, [onReset]);
 
+  // 이 화면에서는 iOS 기본 고무줄 바운스를 끈다. 바운스가 있으면 맨 위에서 당길 때
+  // 고정된 제목까지 끌려 내려오기 때문이다. 당기는 터치 이벤트는 그대로 들어오므로
+  // 제목은 제자리에 두고 그 아래 리프레시 아이콘만 내려오게 된다.
+  useEffect(() => {
+    const targets = [document.documentElement, document.body];
+    const previous = targets.map((el) => el.style.overscrollBehaviorY);
+    targets.forEach((el) => {
+      el.style.overscrollBehaviorY = 'none';
+    });
+    return () => {
+      targets.forEach((el, i) => {
+        el.style.overscrollBehaviorY = previous[i];
+      });
+    };
+  }, []);
+
   useEffect(() => {
     if (!enabled) {
       return;
